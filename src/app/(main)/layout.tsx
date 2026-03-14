@@ -4,6 +4,8 @@ import NotificationProvider from "@/components/NotificationProvider";
 import SidebarProvider from "@/components/SidebarContext";
 import SearchProvider from "@/components/SearchContext";
 
+export const dynamic = "force-dynamic";
+
 export default function MainLayout({
   children,
 }: {

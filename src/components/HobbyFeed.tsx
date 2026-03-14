@@ -3,25 +3,26 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { type Skill, SKILL_LEVEL_COLORS } from "@/lib/profile-data";
+import type { Skill } from "@/lib/profile-data";
+import { SKILL_LEVEL_COLORS } from "@/lib/profile-data";
 import { getDisplayName, getInitials } from "@/lib/display-name";
 import { formatDate } from "@/lib/date-locale";
 import { useSearch } from "@/components/SearchContext";
 
-interface ProfileSnippet {
+type ProfileSnippet = {
   first_name?: string | null;
   last_name?: string | null;
   avatar_url?: string | null;
   is_banned?: boolean | null;
   id?: string;
-}
+};
 
-interface CreatorExtras {
+type CreatorExtras = {
   skills: Skill[];
   hobbies: string[];
-}
+};
 
-interface HobbyWithProfile {
+type HobbyWithProfile = {
   id: string;
   title: string;
   description: string | null;
@@ -29,7 +30,7 @@ interface HobbyWithProfile {
   created_by: string;
   created_at: string;
   profiles: ProfileSnippet | null;
-}
+};
 
 export default function HobbyFeed() {
   const supabase = createClient();

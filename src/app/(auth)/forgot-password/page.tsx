@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import AppLogo from "@/components/AppLogo";
 import { createClient } from "@/lib/supabase/client";
 
 const EMAIL_DOMAIN = "@rsu.ac.th";
@@ -71,11 +72,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <div className="mb-8 flex items-center gap-3 lg:hidden">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-white">
-          <span className="text-lg font-bold">H</span>
-        </div>
-        <span className="text-xl font-semibold text-charcoal dark:text-white">HobbyConnect</span>
+      <div className="mb-8 lg:hidden">
+        <AppLogo variant="light" size="md" />
       </div>
 
       <h2 className="mb-1 text-2xl font-bold text-charcoal dark:text-white">Forgot password?</h2>

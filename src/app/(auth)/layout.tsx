@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLogo from "@/components/AppLogo";
 
 export default function AuthLayout({
   children,
@@ -9,14 +9,7 @@ export default function AuthLayout({
     <div className="flex min-h-screen">
       {/* Left panel — branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-gradient-to-br from-brand-600 via-brand to-brand-400 p-12 text-white">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-            <span className="text-lg font-bold">H</span>
-          </div>
-          <span className="text-xl font-semibold tracking-tight">
-            HobbyConnect
-          </span>
-        </Link>
+        <AppLogo variant="dark" size="md" link className="gap-3" />
 
         <div className="max-w-md">
           <h1 className="mb-4 text-4xl font-bold leading-tight">

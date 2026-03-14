@@ -34,9 +34,10 @@ type HobbyWithProfile = {
 
 export default function HobbyFeed() {
   const supabase = createClient();
-  const { query: searchQuery, category: selectedCategory, ALL_TAG } = useSearch();
+  const { query: searchQuery, category: selectedCategory, setCategory, clear, ALL_TAG } = useSearch();
 
   const [hobbies, setHobbies] = useState<HobbyWithProfile[]>([]);
+  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filtering, setFiltering] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -85,7 +86,25 @@ export default function HobbyFeed() {
       if (error) {
         console.error("[HobbyFeed] Failed to fetch hobbies:", error.message);
       }
-      setHobbies((data as unknown as HobbyWithProfile[]) ?? []);
+      const list = (data as unknown as HobbyWithProfile[]) ?? [];
+      setHobbies(list);
+
+      if (list.length > 0) {
+        const ids = list.map((h) => h.id);
+        const { data: interestRows } = await supabase
+          .from("interests")
+          .select("hobby_id")
+          .in("hobby_id", ids);
+        const counts: Record<string, number> = {};
+        ids.forEach((id) => (counts[id] = 0));
+        (interestRows as { hobby_id: string }[] | null)?.forEach((row) => {
+          counts[row.hobby_id] = (counts[row.hobby_id] ?? 0) + 1;
+        });
+        setMemberCounts(counts);
+      } else {
+        setMemberCounts({});
+      }
+
       setFiltering(false);
       setLoading(false);
     },
@@ -159,35 +178,58 @@ export default function HobbyFeed() {
   return (
     <div className="mx-auto w-full max-w-2xl">
       {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-brand border-t-transparent" />
-          </div>
-        ) : (() => {
-          const visibleHobbies = hobbies.filter(
-            (h) => !h.profiles?.is_banned || h.created_by === userId,
-          );
-          if (visibleHobbies.length === 0) {
-            return (
-              <NoResults
-                hasFilters={searchQuery.trim() !== "" || selectedCategory !== ALL_TAG}
-              />
-            );
-          }
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-charcoal-100 bg-white p-6 dark:border-charcoal-700 dark:bg-charcoal-800/40"
+            >
+              <div className="flex gap-3">
+                <div className="h-10 w-16 shrink-0 animate-pulse rounded-lg bg-charcoal-100 dark:bg-charcoal-700" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-4 w-3/4 animate-pulse rounded bg-charcoal-100 dark:bg-charcoal-700" />
+                  <div className="h-3 w-full animate-pulse rounded bg-charcoal-100 dark:bg-charcoal-700" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-charcoal-100 dark:bg-charcoal-700" />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <div className="h-6 w-20 animate-pulse rounded-full bg-charcoal-100 dark:bg-charcoal-700" />
+                <div className="h-6 w-16 animate-pulse rounded-full bg-charcoal-100 dark:bg-charcoal-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (() => {
+        const visibleHobbies = hobbies.filter(
+          (h) => !h.profiles?.is_banned || h.created_by === userId,
+        );
+        if (visibleHobbies.length === 0) {
           return (
-            <div className="space-y-3">
-              {visibleHobbies.map((hobby) => (
+            <NoResults
+              hasFilters={searchQuery.trim() !== "" || selectedCategory !== ALL_TAG}
+              onClearFilters={() => {
+                setCategory(ALL_TAG);
+                clear();
+              }}
+            />
+          );
+        }
+        return (
+          <div className="space-y-4">
+            {visibleHobbies.map((hobby) => (
               <HobbyCard
                 key={hobby.id}
                 hobby={hobby}
+                memberCount={memberCounts[hobby.id] ?? 0}
                 userId={userId}
                 joined={joinedIds.has(hobby.id)}
                 joining={joiningId === hobby.id}
                 onJoin={handleJoin}
               />
-              ))}
-            </div>
-          );
-        })()}
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -196,12 +238,14 @@ export default function HobbyFeed() {
 
 function HobbyCard({
   hobby,
+  memberCount,
   userId,
   joined,
   joining,
   onJoin,
 }: {
   hobby: HobbyWithProfile;
+  memberCount: number;
   userId: string | null;
   joined: boolean;
   joining: boolean;
@@ -238,10 +282,10 @@ function HobbyCard({
   }
 
   return (
-    <div className="group rounded-xl border border-charcoal-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-charcoal-700 dark:bg-charcoal-800/60 dark:backdrop-blur-sm">
+    <div className="group rounded-2xl border border-l-4 border-l-brand border-charcoal-100 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-charcoal-700 dark:border-l-brand dark:bg-charcoal-800/60 dark:backdrop-blur-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-charcoal dark:text-white">
               {hobby.title}
             </h3>
@@ -250,9 +294,14 @@ function HobbyCard({
                 {hobby.category}
               </span>
             )}
+            {memberCount > 0 && (
+              <span className="shrink-0 text-xs text-charcoal-400 dark:text-charcoal-500">
+                {memberCount} {memberCount === 1 ? "person" : "people"} interested
+              </span>
+            )}
           </div>
           {hobby.description && (
-            <p className="mt-1 text-sm leading-relaxed text-charcoal-400 dark:text-charcoal-300">
+            <p className="mt-1.5 text-sm leading-relaxed text-charcoal-400 dark:text-charcoal-300">
               {hobby.description}
             </p>
           )}
@@ -376,12 +425,18 @@ function HobbyCard({
 
 /* ─── Empty state ─── */
 
-function NoResults({ hasFilters }: { hasFilters: boolean }) {
+function NoResults({
+  hasFilters,
+  onClearFilters,
+}: {
+  hasFilters: boolean;
+  onClearFilters: () => void;
+}) {
   return (
-    <div className="rounded-xl border border-dashed border-charcoal-200 py-16 text-center dark:border-charcoal-600">
-      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-900/30">
+    <div className="rounded-2xl border border-dashed border-charcoal-200 bg-charcoal-50/30 py-16 text-center dark:border-charcoal-600 dark:bg-charcoal-800/30">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-900/30">
         <svg
-          className="h-6 w-6 text-brand"
+          className="h-7 w-7 text-brand"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -402,14 +457,23 @@ function NoResults({ hasFilters }: { hasFilters: boolean }) {
           )}
         </svg>
       </div>
-      <p className="text-sm font-medium text-charcoal-400 dark:text-charcoal-300">
+      <p className="text-sm font-medium text-charcoal-600 dark:text-charcoal-300">
         {hasFilters ? "No communities match your search" : "No communities yet"}
       </p>
-      <p className="mt-1 text-xs text-charcoal-300 dark:text-charcoal-500">
+      <p className="mt-1 text-xs text-charcoal-400 dark:text-charcoal-500">
         {hasFilters
           ? "Try a different keyword or category."
-          : "Be the first to create one!"}
+          : "Be the first to create one! Open the menu (☰) and click Create community."}
       </p>
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-600"
+        >
+          Clear filters
+        </button>
+      )}
     </div>
   );
 }

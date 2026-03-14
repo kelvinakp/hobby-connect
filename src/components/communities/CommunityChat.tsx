@@ -223,13 +223,13 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
 
                   <div className="relative max-w-[75%]">
                     <div
-                      className={`rounded-2xl px-4 py-2.5 ${
+                      className={`rounded-2xl px-4 py-2.5 shadow-sm ${
                         isOwn
-                          ? "rounded-br-md bg-brand text-white"
-                          : "rounded-bl-md bg-charcoal-50 text-charcoal dark:bg-charcoal-700 dark:text-white"
+                          ? "rounded-br-md bg-brand text-white shadow-brand/20"
+                          : "rounded-bl-md border border-charcoal-100 bg-white text-charcoal dark:border-charcoal-600 dark:bg-charcoal-700 dark:text-white"
                       }`}
                     >
-                      <p className="mb-0.5 text-xs font-semibold text-brand dark:text-brand-300">
+                      <p className={`mb-0.5 text-xs font-semibold ${isOwn ? "text-white/90" : "text-brand dark:text-brand-300"}`}>
                         {isOwn ? "You" : (
                           <Link
                             href={`/users/${msg.user_id}`}
@@ -242,7 +242,7 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
                       <p className="text-sm leading-relaxed">
                         {authorBanned && !isMod ? "This message has been hidden." : msg.content}
                       </p>
-                      <p className={`mt-1 text-[10px] ${isOwn ? "text-white/60" : "text-charcoal-300 dark:text-charcoal-400"}`}>
+                      <p className={`mt-1 text-[10px] ${isOwn ? "text-white/70" : "text-charcoal-400 dark:text-charcoal-500"}`}>
                         {formatTime(msg.created_at)}
                       </p>
                     </div>

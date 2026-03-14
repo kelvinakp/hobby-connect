@@ -82,56 +82,62 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
         <h3 className="text-sm font-semibold text-charcoal dark:text-white">
           Members
         </h3>
-        <span className="rounded-full bg-charcoal-50 px-2.5 py-0.5 text-[11px] font-semibold text-charcoal-500 dark:bg-charcoal-700 dark:text-charcoal-300">
+        <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand dark:bg-brand-900/30 dark:text-brand-300">
           {totalCount}
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Creator */}
-        <div className="flex items-center gap-3 border-b border-charcoal-50 px-5 py-3.5 dark:border-charcoal-700/50">
-          {creatorProfile?.avatar_url ? (
-            <Image src={creatorProfile.avatar_url} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full bg-brand-50 dark:bg-brand-900/30" unoptimized />
-          ) : (
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-400 text-xs font-bold text-white">
-              {getInitials(creatorProfile)}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-charcoal dark:text-white">{getDisplayName(creatorProfile, "Unknown")}</p>
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                Owner
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Creator card */}
+        <div className="mb-4 rounded-2xl border border-l-4 border-l-brand border-charcoal-100 bg-gradient-to-r from-brand-50/50 to-transparent p-4 dark:border-charcoal-700 dark:from-brand-900/10 dark:border-l-brand">
+          <div className="flex items-center gap-3">
+            {creatorProfile?.avatar_url ? (
+              <Image src={creatorProfile.avatar_url} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-full bg-brand-50 dark:bg-brand-900/30" unoptimized />
+            ) : (
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-500 text-sm font-bold text-white shadow-md shadow-brand/20">
+                {getInitials(creatorProfile)}
               </span>
-            </div>
-            {creatorProfile?.major && (
-              <p className="text-xs text-charcoal-400 dark:text-charcoal-500">{creatorProfile.major}</p>
             )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-charcoal dark:text-white">{getDisplayName(creatorProfile, "Unknown")}</p>
+                <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                  Creator
+                </span>
+                {createdBy === userId && (
+                  <span className="rounded-full bg-charcoal-100 px-2 py-0.5 text-[10px] font-medium text-charcoal-500 dark:bg-charcoal-600 dark:text-charcoal-300">You</span>
+                )}
+              </div>
+              {creatorProfile?.major && (
+                <p className="mt-0.5 text-xs text-charcoal-500 dark:text-charcoal-400">{creatorProfile.major}</p>
+              )}
+            </div>
           </div>
-          {createdBy === userId && (
-            <span className="text-[10px] font-medium text-charcoal-300 dark:text-charcoal-500">You</span>
-          )}
         </div>
 
         {/* Joined members */}
         {members.length === 0 ? (
-          <div className="px-5 py-12 text-center">
+          <div className="rounded-2xl border border-dashed border-charcoal-200 py-12 text-center dark:border-charcoal-600">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-charcoal-50 dark:bg-charcoal-700">
               <svg className="h-6 w-6 text-charcoal-300 dark:text-charcoal-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-charcoal-400 dark:text-charcoal-300">No members yet</p>
+            <p className="text-sm font-medium text-charcoal-400 dark:text-charcoal-300">No other members yet</p>
             <p className="mt-1 text-xs text-charcoal-300 dark:text-charcoal-500">
               Students can join from the hobby feed.
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-charcoal-50 dark:divide-charcoal-700/50">
+          <div className="space-y-2">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-charcoal-400 dark:text-charcoal-500">Members</p>
             {members.map((m) => {
               const isYou = m.user_id === userId;
               return (
-                <li key={m.id} className="group flex items-center gap-3 px-5 py-3">
+                <div
+                  key={m.id}
+                  className="group flex items-center gap-3 rounded-xl border border-charcoal-100 bg-white px-4 py-3 transition-shadow hover:shadow-sm dark:border-charcoal-700 dark:bg-charcoal-800/40"
+                >
                   {m.profiles?.avatar_url ? (
                     <Image src={m.profiles.avatar_url} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full bg-brand-50 dark:bg-brand-900/30" unoptimized />
                   ) : (
@@ -140,18 +146,21 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-medium text-charcoal dark:text-white">{getDisplayName(m.profiles, "Unknown")}</p>
+                      <span className="rounded-full bg-charcoal-50 px-2 py-0.5 text-[10px] font-medium text-charcoal-500 dark:bg-charcoal-600 dark:text-charcoal-300">
+                        Member
+                      </span>
                       {isYou && (
-                        <span className="text-[10px] font-medium text-charcoal-300 dark:text-charcoal-500">You</span>
+                        <span className="rounded-full bg-charcoal-100 px-2 py-0.5 text-[10px] font-medium text-charcoal-500 dark:bg-charcoal-600 dark:text-charcoal-300">You</span>
                       )}
                     </div>
                     {m.profiles?.major && (
-                      <p className="text-xs text-charcoal-400 dark:text-charcoal-500">{m.profiles.major}</p>
+                      <p className="mt-0.5 text-xs text-charcoal-400 dark:text-charcoal-500">{m.profiles.major}</p>
                     )}
                   </div>
-                  <span className="shrink-0 text-[11px] text-charcoal-300 dark:text-charcoal-500">
-                    {formatShortDate(m.created_at)}
+                  <span className="shrink-0 text-[11px] text-charcoal-400 dark:text-charcoal-500">
+                    Joined {formatShortDate(m.created_at)}
                   </span>
                   {isMod && !isYou && (
                     <button
@@ -165,10 +174,10 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
                       </svg>
                     </button>
                   )}
-                </li>
+                </div>
               );
             })}
-          </ul>
+          </div>
         )}
       </div>
     </div>

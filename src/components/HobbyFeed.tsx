@@ -14,6 +14,7 @@ interface ProfileSnippet {
   avatar_url?: string | null;
   is_banned?: boolean | null;
   id?: string;
+}
 
 interface CreatorExtras {
   skills: Skill[];

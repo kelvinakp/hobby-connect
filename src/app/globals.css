@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-brand-50: #F3E8FF;
+  --color-brand-100: #E9D5FF;
+  --color-brand-200: #D8B4FE;
+  --color-brand-300: #C084FC;
+  --color-brand-400: #A855F7;
+  --color-brand: #6A0DAD;
+  --color-brand-500: #6A0DAD;
+  --color-brand-600: #5A0B92;
+  --color-brand-700: #4A0977;
+  --color-brand-800: #3B075C;
+  --color-brand-900: #2B0541;
+
+  --color-charcoal-50: #F5F5F5;
+  --color-charcoal-100: #E0E0E0;
+  --color-charcoal-200: #BDBDBD;
+  --color-charcoal-300: #9E9E9E;
+  --color-charcoal-400: #757575;
+  --color-charcoal-500: #616161;
+  --color-charcoal-600: #424242;
+  --color-charcoal-700: #303030;
+  --color-charcoal-800: #212121;
+  --color-charcoal: #121212;
+  --color-charcoal-900: #121212;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+@keyframes fadeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

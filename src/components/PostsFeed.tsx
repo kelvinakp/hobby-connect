@@ -9,40 +9,57 @@ interface Post {
   title: string;
   content: string;
   status: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
-  image_data: string | null;
+  image_url: string | null;
   created_at: string;
 }
+
+const PAGE_SIZE = 20;
 
 export default function PostsFeed() {
   const supabase = createClient();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  async function fetchPostsPage(pageNumber: number) {
+    const from = pageNumber * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    return supabase
+      .from("posts")
+      .select("id, title, content, status, image_url, created_at")
+      .eq("status", "PUBLISHED")
+      .order("created_at", { ascending: false })
+      .range(from, to);
+  }
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("id, title, content, status, image_data, created_at")
-        .eq("status", "PUBLISHED")
-        .order("created_at", { ascending: false })
-        .limit(20);
+    async function load(pageToLoad: number, replace = false) {
+      const { data, error } = await fetchPostsPage(pageToLoad);
 
       if (error) {
         console.warn("[PostsFeed] Could not load posts:", error.message);
       }
 
       if (!mounted) return;
-      setPosts((data as unknown as Post[]) ?? []);
+      const incoming = (data as unknown as Post[]) ?? [];
+      setPosts((prev) => (replace ? incoming : [...prev, ...incoming]));
+      setHasMore(incoming.length === PAGE_SIZE);
+      setPage(pageToLoad);
       setLoading(false);
+      setLoadingMore(false);
     }
 
     function onRefresh() {
       setLoading(true);
-      void load();
+      setLoadingMore(false);
+      setHasMore(true);
+      void load(0, true);
     }
 
-    void load();
+    void load(0, true);
     window.addEventListener("posts:refresh", onRefresh as EventListener);
 
     return () => {
@@ -96,6 +113,36 @@ export default function PostsFeed() {
       {posts.map((post) => (
         <PostCard key={post.id} post={post} />
       ))}
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setLoadingMore(true);
+              void (async () => {
+                const nextPage = page + 1;
+                const { data, error } = await fetchPostsPage(nextPage);
+
+                if (error) {
+                  console.warn("[PostsFeed] Could not load more posts:", error.message);
+                  setLoadingMore(false);
+                  return;
+                }
+
+                const incoming = (data as unknown as Post[]) ?? [];
+                setPosts((prev) => [...prev, ...incoming]);
+                setHasMore(incoming.length === PAGE_SIZE);
+                setPage(nextPage);
+                setLoadingMore(false);
+              })();
+            }}
+            disabled={loadingMore}
+            className="rounded-xl border border-charcoal-200 bg-white px-4 py-2 text-sm font-semibold text-charcoal-600 transition-colors hover:bg-charcoal-50 disabled:opacity-50 dark:border-charcoal-700 dark:bg-charcoal-800 dark:text-charcoal-200 dark:hover:bg-charcoal-700"
+          >
+            {loadingMore ? "Loading..." : "Load more"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -112,9 +159,9 @@ function PostCard({ post }: { post: Post }) {
       <p className="whitespace-pre-wrap text-sm leading-7 text-charcoal-500 dark:text-charcoal-300">
         {post.content}
       </p>
-      {post.image_data && (
+      {post.image_url && (
         <img
-          src={post.image_data}
+          src={post.image_url}
           alt=""
           className="mt-4 max-h-[420px] w-full rounded-xl border border-charcoal-100 object-cover dark:border-charcoal-700"
         />

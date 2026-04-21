@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
   const pathname = request.nextUrl.pathname;
+  const ONBOARDING_COOKIE = "hc_onboarded";
+  const ONBOARDING_COOKIE_MAX_AGE = 60;
 
   const redirectTo = (targetPath: string) => {
     const url = request.nextUrl.clone();
@@ -67,13 +69,30 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (user && !isAuthCallback && !isResetPasswordPage) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_complete")
-        .eq("id", user.id)
-        .single();
+      const cachedOnboarded = request.cookies.get(ONBOARDING_COOKIE)?.value;
+      let onboarded: boolean | undefined;
 
-      const onboarded = (profile as { onboarding_complete: boolean } | null)?.onboarding_complete;
+      if (cachedOnboarded === "1") {
+        onboarded = true;
+      } else if (cachedOnboarded === "0") {
+        onboarded = false;
+      } else {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_complete")
+          .eq("id", user.id)
+          .single();
+
+        onboarded = (profile as { onboarding_complete: boolean } | null)?.onboarding_complete;
+        if (onboarded === true || onboarded === false) {
+          supabaseResponse.cookies.set(ONBOARDING_COOKIE, onboarded ? "1" : "0", {
+            path: "/",
+            maxAge: ONBOARDING_COOKIE_MAX_AGE,
+            sameSite: "lax",
+            httpOnly: false,
+          });
+        }
+      }
 
       if (onboarded === false && !isOnboardingPage) {
         return redirectTo("/onboarding");

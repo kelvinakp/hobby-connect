@@ -197,7 +197,8 @@ export type Database = {
           title: string;
           content: string;
           status: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
-          image_data: string | null;
+          image_path: string | null;
+          image_url: string | null;
           image_mime_type: string | null;
           image_size_bytes: number | null;
           reviewed_by: string | null;
@@ -213,7 +214,8 @@ export type Database = {
           title: string;
           content: string;
           status?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
-          image_data?: string | null;
+          image_path?: string | null;
+          image_url?: string | null;
           image_mime_type?: string | null;
           image_size_bytes?: number | null;
           reviewed_by?: string | null;
@@ -229,7 +231,8 @@ export type Database = {
           title?: string;
           content?: string;
           status?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
-          image_data?: string | null;
+          image_path?: string | null;
+          image_url?: string | null;
           image_mime_type?: string | null;
           image_size_bytes?: number | null;
           reviewed_by?: string | null;

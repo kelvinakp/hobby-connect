@@ -91,15 +91,19 @@ export default function HobbyFeed() {
 
       if (list.length > 0) {
         const ids = list.map((h) => h.id);
-        const { data: interestRows } = await supabase
-          .from("interests")
-          .select("hobby_id")
-          .in("hobby_id", ids);
         const counts: Record<string, number> = {};
         ids.forEach((id) => (counts[id] = 0));
-        (interestRows as { hobby_id: string }[] | null)?.forEach((row) => {
-          counts[row.hobby_id] = (counts[row.hobby_id] ?? 0) + 1;
-        });
+        const { data: countRows, error: countError } = await supabase.rpc(
+          "get_interest_counts",
+          { hobby_ids: ids }
+        );
+        if (countError) {
+          console.warn("[HobbyFeed] Could not load member counts:", countError.message);
+        } else {
+          (countRows as { hobby_id: string; member_count: number }[] | null)?.forEach((row) => {
+            counts[row.hobby_id] = row.member_count ?? 0;
+          });
+        }
         setMemberCounts(counts);
       } else {
         setMemberCounts({});

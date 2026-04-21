@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import {
@@ -20,6 +21,7 @@ interface SearchResult {
 }
 
 export default function Header() {
+  const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAllRead, clearAll } =
     useNotifications();
@@ -47,14 +49,15 @@ export default function Header() {
   }, []);
 
   const searchCommunities = useCallback(async (q: string) => {
-    if (!q.trim()) {
+    const normalized = q.trim();
+    if (normalized.length < 2) {
       setResults([]);
       setSearching(false);
       return;
     }
     setSearching(true);
     const supabase = createClient();
-    const pattern = `%${q.trim()}%`;
+    const pattern = `%${normalized}%`;
     const { data } = await supabase
       .from("hobbies")
       .select("id, title, description, category")
@@ -66,6 +69,19 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+    if (!searchFocused) {
+      setSearching(false);
+      return;
+    }
+
+    // Avoid duplicate search queries on the feed page where HobbyFeed
+    // already fetches filtered communities from the same query state.
+    if (pathname === "/") {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       searchCommunities(query);
@@ -73,7 +89,7 @@ export default function Header() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, searchCommunities]);
+  }, [query, searchCommunities, searchFocused, pathname]);
 
   function handleNotifToggle() {
     setNotifOpen((prev) => {
@@ -87,7 +103,7 @@ export default function Header() {
     clear();
   }
 
-  const showDropdown = searchFocused && query.trim().length > 0;
+  const showDropdown = searchFocused && query.trim().length >= 2;
 
   return (
     <header className="fixed left-0 right-0 top-0 z-30">

@@ -21,7 +21,8 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [role, setRole] = useState<string>("user");
-  const [imageData, setImageData] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string | null>(null);
   const [imageSizeBytes, setImageSizeBytes] = useState<number | null>(null);
 
@@ -31,7 +32,8 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
       setContent("");
       setFormError("");
       setSuccessMsg("");
-      setImageData(null);
+      setImageFile(null);
+      setImagePreviewUrl(null);
       setImageMimeType(null);
       setImageSizeBytes(null);
       return;
@@ -62,6 +64,12 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError("");
@@ -85,19 +93,54 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
     setSubmitting(true);
 
     const status = role === "admin" ? "PUBLISHED" : "PENDING_REVIEW";
+    const postId = crypto.randomUUID();
+    let uploadedPath: string | null = null;
+    let uploadedUrl: string | null = null;
+
+    if (imageFile) {
+      const fileExt =
+        imageFile.name.split(".").pop()?.toLowerCase() ||
+        imageFile.type.split("/")[1] ||
+        "jpg";
+      const objectPath = `${user.id}/${postId}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("post-images")
+        .upload(objectPath, imageFile, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: imageFile.type,
+        });
+
+      if (uploadError) {
+        setFormError(`Image upload failed: ${uploadError.message}`);
+        setSubmitting(false);
+        return;
+      }
+
+      uploadedPath = objectPath;
+      const { data: publicUrlData } = supabase.storage
+        .from("post-images")
+        .getPublicUrl(objectPath);
+      uploadedUrl = publicUrlData.publicUrl;
+    }
 
     const { error } = await supabase.from("posts").insert({
+      id: postId,
       author_id: user.id,
       title: title.trim(),
       content: content.trim(),
       community_id: null,
       status,
-      image_data: imageData,
+      image_path: uploadedPath,
+      image_url: uploadedUrl,
       image_mime_type: imageMimeType,
       image_size_bytes: imageSizeBytes,
     });
 
     if (error) {
+      if (uploadedPath) {
+        await supabase.storage.from("post-images").remove([uploadedPath]);
+      }
       if (error.code === "42501" || error.message.includes("policy")) {
         setFormError("You don't have permission to create posts.");
       } else {
@@ -116,7 +159,8 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
       setSuccessMsg("Your post has been submitted for admin review.");
       setTitle("");
       setContent("");
-      setImageData(null);
+      setImageFile(null);
+      setImagePreviewUrl(null);
       setImageMimeType(null);
       setImageSizeBytes(null);
       setTimeout(() => {
@@ -129,7 +173,8 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
   async function handleImageChange(file: File | null) {
     setFormError("");
     if (!file) {
-      setImageData(null);
+      setImageFile(null);
+      setImagePreviewUrl(null);
       setImageMimeType(null);
       setImageSizeBytes(null);
       return;
@@ -145,14 +190,9 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
       return;
     }
 
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("Could not read image."));
-      reader.readAsDataURL(file);
-    });
-
-    setImageData(dataUrl);
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    setImageFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
     setImageMimeType(file.type);
     setImageSizeBytes(file.size);
   }
@@ -258,9 +298,9 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
                     Selected image: {(imageSizeBytes / 1024).toFixed(1)}KB
                   </p>
                 )}
-                {imageData && (
+                {imagePreviewUrl && (
                   <img
-                    src={imageData}
+                    src={imagePreviewUrl}
                     alt=""
                     className="mt-2 max-h-48 rounded-lg border border-charcoal-200 object-cover dark:border-charcoal-700"
                   />

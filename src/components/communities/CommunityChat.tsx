@@ -37,6 +37,7 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
   const [isBanned, setIsBanned] = useState(false);
   const [sendError, setSendError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const profileCacheRef = useRef<Map<string, Message["profiles"]>>(new Map());
 
   const isMod = userRole === "admin" || userRole === "moderator";
 
@@ -57,13 +58,18 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
         .from("messages")
         .select("*, profiles(first_name, last_name, avatar_url, is_banned)")
         .eq("community_id", communityId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(200);
 
       if (error) {
         console.warn("[CommunityChat] Could not load messages:", error.message);
       }
 
-      setMessages((data as Message[]) ?? []);
+      const initial = ((data as Message[]) ?? []).reverse();
+      for (const msg of initial) {
+        if (msg.profiles) profileCacheRef.current.set(msg.user_id, msg.profiles);
+      }
+      setMessages(initial);
       setLoading(false);
     }
     load();
@@ -82,11 +88,16 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
         },
         async (payload) => {
           const record = payload.new as Record<string, string>;
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("first_name, last_name, avatar_url, is_banned")
-            .eq("id", record.user_id)
-            .single();
+          let profile = profileCacheRef.current.get(record.user_id) ?? null;
+          if (!profile) {
+            const { data } = await supabase
+              .from("profiles")
+              .select("first_name, last_name, avatar_url, is_banned")
+              .eq("id", record.user_id)
+              .single();
+            profile = (data as Message["profiles"]) ?? null;
+            if (profile) profileCacheRef.current.set(record.user_id, profile);
+          }
 
           const msg: Message = {
             id: record.id,
@@ -94,7 +105,7 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
             user_id: record.user_id,
             content: record.content,
             created_at: record.created_at,
-            profiles: profile as Message["profiles"],
+            profiles: profile,
           };
 
           setMessages((prev) => [...prev, msg]);

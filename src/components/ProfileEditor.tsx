@@ -63,6 +63,7 @@ export default function ProfileEditor() {
   const [showHobbySuggestions, setShowHobbySuggestions] = useState(false);
 
   const [changingPassword, setChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -215,6 +216,10 @@ export default function ProfileEditor() {
   async function handleChangePassword(e: FormEvent) {
     e.preventDefault();
     setPasswordMsg(null);
+    if (!currentPassword) {
+      setPasswordMsg({ type: "error", text: "Current password is required." });
+      return;
+    }
     if (newPassword.length < 8) {
       setPasswordMsg({ type: "error", text: "Password must be at least 8 characters." });
       return;
@@ -224,17 +229,34 @@ export default function ProfileEditor() {
       return;
     }
     setPasswordSaving(true);
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: auth.email,
+      password: currentPassword,
+    });
+    if (reauthError) {
+      setPasswordMsg({ type: "error", text: "Current password is incorrect." });
+      setPasswordSaving(false);
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
       setPasswordMsg({ type: "error", text: error.message });
     } else {
       setPasswordMsg({ type: "success", text: "Password updated successfully!" });
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setChangingPassword(false);
     }
     setPasswordSaving(false);
   }
+
+  const canSubmitPasswordChange =
+    currentPassword.trim().length > 0 &&
+    newPassword.length >= 8 &&
+    confirmPassword.length > 0 &&
+    newPassword === confirmPassword &&
+    !passwordSaving;
 
   if (loading) {
     return (
@@ -451,6 +473,14 @@ export default function ProfileEditor() {
         {changingPassword && (
           <form onSubmit={handleChangePassword} className="mt-4 space-y-4">
             <PasswordInput
+              id="current-pw"
+              label="Current Password"
+              placeholder="Enter your current password"
+              value={currentPassword}
+              onChange={setCurrentPassword}
+              autoComplete="current-password"
+            />
+            <PasswordInput
               id="new-pw"
               label="New Password"
               placeholder="At least 8 characters"
@@ -468,10 +498,10 @@ export default function ProfileEditor() {
               autoComplete="new-password"
             />
             <div className="flex gap-3">
-              <button type="submit" disabled={passwordSaving} className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-600 disabled:opacity-50">
+              <button type="submit" disabled={!canSubmitPasswordChange} className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50">
                 {passwordSaving ? "Updating…" : "Update Password"}
               </button>
-              <button type="button" onClick={() => { setChangingPassword(false); setNewPassword(""); setConfirmPassword(""); setPasswordMsg(null); }} className="rounded-lg px-4 py-2.5 text-sm font-medium text-charcoal-500 transition-colors hover:bg-charcoal-100 dark:text-charcoal-400 dark:hover:bg-charcoal-800">
+              <button type="button" onClick={() => { setChangingPassword(false); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setPasswordMsg(null); }} className="rounded-lg px-4 py-2.5 text-sm font-medium text-charcoal-500 transition-colors hover:bg-charcoal-100 dark:text-charcoal-400 dark:hover:bg-charcoal-800">
                 Cancel
               </button>
             </div>

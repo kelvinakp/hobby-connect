@@ -92,7 +92,7 @@ export default function CreateCommunityModal({ open, onClose, onCreated }: Props
       />
 
       {/* Modal */}
-      <div className="relative z-10 mx-4 w-full max-w-md animate-[fadeScaleIn_200ms_ease-out] rounded-2xl border border-charcoal-100/80 bg-white p-6 shadow-2xl dark:border-charcoal-700 dark:bg-charcoal-900">
+      <div className="relative z-10 mx-4 w-full max-w-md animate-[fadeScaleIn_200ms_ease-out] rounded-3xl border border-charcoal-100/80 bg-white/95 p-6 shadow-2xl shadow-charcoal-900/10 backdrop-blur-xl dark:border-charcoal-700/80 dark:bg-charcoal-900/80 dark:shadow-black/40">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-bold text-charcoal dark:text-white">
@@ -131,7 +131,7 @@ export default function CreateCommunityModal({ open, onClose, onCreated }: Props
               placeholder="e.g. Python Study Group"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="block w-full rounded-xl border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 dark:border-charcoal-600 dark:bg-charcoal-800 dark:text-white dark:placeholder:text-charcoal-500"
+              className="block w-full rounded-xl border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 shadow-sm transition-all focus:-translate-y-[1px] focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15 dark:border-charcoal-600 dark:bg-charcoal-800/80 dark:text-white dark:placeholder:text-charcoal-500"
             />
           </div>
 
@@ -149,7 +149,7 @@ export default function CreateCommunityModal({ open, onClose, onCreated }: Props
               placeholder="A brief description of the community…"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="block w-full resize-none rounded-xl border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 dark:border-charcoal-600 dark:bg-charcoal-800 dark:text-white dark:placeholder:text-charcoal-500"
+              className="block w-full resize-none rounded-xl border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 shadow-sm transition-all focus:-translate-y-[1px] focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15 dark:border-charcoal-600 dark:bg-charcoal-800/80 dark:text-white dark:placeholder:text-charcoal-500"
             />
           </div>
 
@@ -164,7 +164,7 @@ export default function CreateCommunityModal({ open, onClose, onCreated }: Props
               id="modal-cat"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="block w-full rounded-xl border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 dark:border-charcoal-600 dark:bg-charcoal-800 dark:text-white"
+              className="block w-full rounded-xl border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal shadow-sm transition-all focus:-translate-y-[1px] focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15 dark:border-charcoal-600 dark:bg-charcoal-800/80 dark:text-white"
             >
               <option value="">Select a category…</option>
               {HOBBY_CATEGORIES.map((cat) => (
@@ -177,7 +177,7 @@ export default function CreateCommunityModal({ open, onClose, onCreated }: Props
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-[1px] hover:shadow-xl hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
                 <>

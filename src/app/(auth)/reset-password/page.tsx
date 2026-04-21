@@ -103,7 +103,7 @@ export default function ResetPasswordPage() {
         <AppLogo variant="light" size="md" />
       </div>
 
-      <h2 className="mb-1 text-2xl font-bold text-charcoal dark:text-white">Set new password</h2>
+      <h2 className="mb-1 text-3xl font-bold tracking-tight text-charcoal dark:text-white">Set new password</h2>
       <p className="mb-8 text-charcoal-400 dark:text-charcoal-300">
         Enter your new password below.
       </p>
@@ -133,7 +133,7 @@ export default function ResetPasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-charcoal"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand to-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-[1px] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-charcoal"
         >
           {loading ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">

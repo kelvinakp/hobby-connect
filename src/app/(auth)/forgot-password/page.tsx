@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
         <AppLogo variant="light" size="md" />
       </div>
 
-      <h2 className="mb-1 text-2xl font-bold text-charcoal dark:text-white">Forgot password?</h2>
+      <h2 className="mb-1 text-3xl font-bold tracking-tight text-charcoal dark:text-white">Forgot password?</h2>
       <p className="mb-8 text-charcoal-400 dark:text-charcoal-300">
         Enter your university email and we&apos;ll send you a link to reset your password.
       </p>
@@ -96,16 +96,16 @@ export default function ForgotPasswordPage() {
             id="email"
             name="email"
             type="email"
-            placeholder={`u6601234${EMAIL_DOMAIN}`}
+            placeholder={`example${EMAIL_DOMAIN}`}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="block w-full rounded-lg border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand dark:border-charcoal-600 dark:bg-charcoal-800 dark:text-white dark:placeholder:text-charcoal-500"
+            className="block w-full rounded-xl border border-charcoal-200 bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 shadow-sm transition-all focus:-translate-y-[1px] focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15 dark:border-charcoal-600 dark:bg-charcoal-800/80 dark:text-white dark:placeholder:text-charcoal-500"
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-charcoal"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand to-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-[1px] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-charcoal"
         >
           {loading ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">

@@ -31,7 +31,7 @@ export function PasswordInput({
 }: PasswordInputProps) {
   const [show, setShow] = useState(false);
 
-  const inputClass = `block w-full rounded-lg border bg-white py-2.5 pr-11 pl-3.5 text-sm text-charcoal placeholder:text-charcoal-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand dark:bg-charcoal-800 dark:text-white dark:placeholder:text-charcoal-500 ${
+  const inputClass = `block w-full rounded-xl border bg-white py-2.5 pr-11 pl-3.5 text-sm text-charcoal placeholder:text-charcoal-300 shadow-sm transition-all focus:-translate-y-[1px] focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand dark:bg-charcoal-800/80 dark:text-white dark:placeholder:text-charcoal-500 ${
     error ? "border-red-400 dark:border-red-600" : "border-charcoal-200 dark:border-charcoal-600"
   } ${className}`;
 

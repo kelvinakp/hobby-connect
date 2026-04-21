@@ -79,7 +79,7 @@ function LoginPageInner() {
         <AppLogo variant="light" size="md" />
       </div>
 
-      <h2 className="mb-1 text-2xl font-bold text-charcoal dark:text-white">
+      <h2 className="mb-1 text-3xl font-bold tracking-tight text-charcoal dark:text-white">
         Welcome back
       </h2>
       <p className="mb-8 text-charcoal-400 dark:text-charcoal-300">
@@ -88,7 +88,7 @@ function LoginPageInner() {
 
       {isBanned && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
-          Your account has been restricted by a moderator. If you believe this is a mistake, please contact support.
+          Your account has been restricted by an admin. If you believe this is a mistake, please contact support.
         </div>
       )}
 
@@ -111,12 +111,12 @@ function LoginPageInner() {
             id="email"
             name="email"
             type="email"
-            placeholder={`u6601234${EMAIL_DOMAIN}`}
+            placeholder={`example${EMAIL_DOMAIN}`}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "email-error" : undefined}
-            className={`block w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand dark:bg-charcoal-800 dark:text-white dark:placeholder:text-charcoal-500 ${
+            className={`block w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal-300 shadow-sm transition-all focus:-translate-y-[1px] focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand dark:bg-charcoal-800/80 dark:text-white dark:placeholder:text-charcoal-500 ${
               errors.email
                 ? "border-red-400 dark:border-red-600"
                 : "border-charcoal-200 dark:border-charcoal-600"
@@ -162,7 +162,7 @@ function LoginPageInner() {
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 transition-all hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-charcoal"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand to-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-[1px] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-charcoal"
         >
           {loading ? (
             <>

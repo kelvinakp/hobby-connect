@@ -1,26 +1,19 @@
-import AppLogo from "@/components/AppLogo";
-import HobbyFeed from "@/components/HobbyFeed";
+import PostsFeed from "@/components/PostsFeed";
+import CreatePostButton from "@/components/CreatePostButton";
 
 export default function Home() {
   return (
     <div className="py-8">
-      <div className="relative mx-auto mb-10 max-w-2xl overflow-hidden rounded-2xl bg-gradient-to-b from-brand-50/60 to-white px-6 py-8 text-center dark:from-brand-900/20 dark:to-charcoal-900">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-brand-200),transparent)] opacity-40 dark:opacity-20" aria-hidden />
-        <div className="relative">
-          <div className="mb-5 flex justify-center">
-            <AppLogo variant="light" size="md" />
-          </div>
-          <h1 className="mb-2 text-2xl font-bold tracking-tight text-charcoal dark:text-white">
-            Welcome to <span className="text-brand">Hobby</span>Connect
-          </h1>
-          <p className="text-sm text-charcoal-400 dark:text-charcoal-300">
-            Discover communities, share skills, and grow together with fellow
-            students at Rangsit University.
-          </p>
-        </div>
+      <div className="mx-auto mb-6 max-w-3xl rounded-2xl border border-charcoal-100/80 bg-white/80 px-5 py-4 shadow-sm backdrop-blur-xl dark:border-charcoal-700/80 dark:bg-charcoal-800/60">
+        <h1 className="text-xl font-bold tracking-tight text-charcoal dark:text-white">
+          Uni Announcement
+        </h1>
+        <p className="mt-1 text-sm text-charcoal-400 dark:text-charcoal-300">
+          Official updates and community announcements in one place.
+        </p>
       </div>
-
-      <HobbyFeed />
+      <CreatePostButton />
+      <PostsFeed />
     </div>
   );
 }

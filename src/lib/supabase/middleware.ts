@@ -3,6 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+
+  const redirectTo = (targetPath: string) => {
+    const url = request.nextUrl.clone();
+    url.pathname = targetPath;
+    return NextResponse.redirect(url);
+  };
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -38,29 +45,28 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const pathname = request.nextUrl.pathname;
-
     const isAuthPage =
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||
       pathname.startsWith("/forgot-password") ||
       pathname.startsWith("/reset-password");
+    const isGuestOnlyAuthPage =
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/register") ||
+      pathname.startsWith("/forgot-password");
+    const isResetPasswordPage = pathname.startsWith("/reset-password");
     const isOnboardingPage = pathname.startsWith("/onboarding");
     const isAuthCallback = pathname.startsWith("/auth");
 
     if (!user && !isAuthPage && !isAuthCallback) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
+      return redirectTo("/login");
     }
 
-    if (user && isAuthPage) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
+    if (user && isGuestOnlyAuthPage) {
+      return redirectTo("/");
     }
 
-    if (user && !isOnboardingPage && !isAuthCallback) {
+    if (user && !isAuthCallback && !isResetPasswordPage) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("onboarding_complete")
@@ -69,26 +75,12 @@ export async function updateSession(request: NextRequest) {
 
       const onboarded = (profile as { onboarding_complete: boolean } | null)?.onboarding_complete;
 
-      if (onboarded === false) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/onboarding";
-        return NextResponse.redirect(url);
+      if (onboarded === false && !isOnboardingPage) {
+        return redirectTo("/onboarding");
       }
-    }
 
-    if (user && isOnboardingPage) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_complete")
-        .eq("id", user.id)
-        .single();
-
-      const onboarded = (profile as { onboarding_complete: boolean } | null)?.onboarding_complete;
-
-      if (onboarded === true) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/";
-        return NextResponse.redirect(url);
+      if (onboarded === true && isOnboardingPage) {
+        return redirectTo("/");
       }
     }
   } catch {

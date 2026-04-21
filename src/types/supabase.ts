@@ -189,6 +189,58 @@ export type Database = {
         Relationships: [];
       };
 
+      posts: {
+        Row: {
+          id: string;
+          community_id: string | null;
+          author_id: string;
+          title: string;
+          content: string;
+          status: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+          image_data: string | null;
+          image_mime_type: string | null;
+          image_size_bytes: number | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          review_note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          community_id?: string | null;
+          author_id: string;
+          title: string;
+          content: string;
+          status?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+          image_data?: string | null;
+          image_mime_type?: string | null;
+          image_size_bytes?: number | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          community_id?: string | null;
+          author_id?: string;
+          title?: string;
+          content?: string;
+          status?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+          image_data?: string | null;
+          image_mime_type?: string | null;
+          image_size_bytes?: number | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+
       user_skills: {
         Row: {
           id: string;
@@ -220,6 +272,7 @@ export type Database = {
 
     Enums: {
       event_status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "COMPLETED";
+      post_status: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
       group_role: "member" | "moderator" | "admin";
       skill_level: "noob" | "skilled" | "pro";
     };

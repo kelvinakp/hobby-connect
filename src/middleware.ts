@@ -10,9 +10,10 @@ export const config = {
     /*
      * Match all routes except:
      * - _next/static, _next/image (Next.js internals)
-     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
-     * - public assets
+     * - metadata files (favicon, sitemap, robots, manifest)
+     * - static/public files by extension
+     * - common API/static endpoints
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.json|site.webmanifest|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|xml|json|woff|woff2|ttf|otf)$).*)",
   ],
 };

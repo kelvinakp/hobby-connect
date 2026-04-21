@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/date-locale";
@@ -160,11 +161,16 @@ function PostCard({ post }: { post: Post }) {
         {post.content}
       </p>
       {post.image_url && (
-        <img
-          src={post.image_url}
-          alt=""
-          className="mt-4 max-h-[420px] w-full rounded-xl border border-charcoal-100 object-cover dark:border-charcoal-700"
-        />
+        <div className="relative mt-4 aspect-[16/9] w-full overflow-hidden rounded-xl border border-charcoal-100 dark:border-charcoal-700">
+          <Image
+            src={post.image_url}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="object-cover"
+            unoptimized
+          />
+        </div>
       )}
     </article>
   );

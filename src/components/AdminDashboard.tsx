@@ -306,8 +306,16 @@ export default function AdminDashboard() {
   async function handleDeletePublishedPost(postId: string) {
     if (!confirm("Delete this published post? This cannot be undone.")) return;
     setDeletingPostId(postId);
-    const { error } = await supabase.from("posts").delete().eq("id", postId);
-    if (!error) {
+    const { data, error } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", postId)
+      .select("id");
+    if (error) {
+      alert(`Could not delete post: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      alert("Could not delete post. You may not have permission for this row.");
+    } else {
       setPublishedPosts((prev) => prev.filter((p) => p.id !== postId));
     }
     setDeletingPostId(null);

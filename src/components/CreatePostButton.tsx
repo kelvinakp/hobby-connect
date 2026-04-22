@@ -5,12 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import CreatePostModal from "@/components/CreatePostModal";
 
 interface Props {
-  communityId?: string | null;
   canManageCommunity?: boolean;
 }
 
-export default function CreatePostButton({ communityId = null, canManageCommunity = false }: Props) {
+export default function CreatePostButton({ canManageCommunity = false }: Props) {
   const [role, setRole] = useState<string>("user");
+  const [isCommunityLeader, setIsCommunityLeader] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -25,11 +25,19 @@ export default function CreatePostButton({ communityId = null, canManageCommunit
         .eq("id", user.id)
         .single();
       setRole((profile as { role: string } | null)?.role ?? "user");
+
+      const { data: leaderCommunity } = await supabase
+        .from("hobbies")
+        .select("id")
+        .eq("created_by", user.id)
+        .limit(1)
+        .maybeSingle();
+      setIsCommunityLeader(!!leaderCommunity);
     }
     load();
   }, []);
 
-  const canPost = role === "admin" || role === "moderator" || canManageCommunity;
+  const canPost = role === "admin" || role === "moderator" || canManageCommunity || isCommunityLeader;
   if (!canPost) return null;
 
   return (
@@ -50,8 +58,7 @@ export default function CreatePostButton({ communityId = null, canManageCommunit
       <CreatePostModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        communityId={communityId}
-        canManageCommunity={canManageCommunity}
+        canManageCommunity={canManageCommunity || isCommunityLeader}
         onCreated={() => {
           window.dispatchEvent(new CustomEvent("posts:refresh"));
           setShowModal(false);

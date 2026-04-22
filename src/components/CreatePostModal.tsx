@@ -8,7 +8,6 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onCreated?: () => void;
-  communityId?: string | null;
   canManageCommunity?: boolean;
 }
 
@@ -18,7 +17,6 @@ export default function CreatePostModal({
   open,
   onClose,
   onCreated,
-  communityId = null,
   canManageCommunity = false,
 }: Props) {
   const supabase = createClient();
@@ -138,7 +136,7 @@ export default function CreatePostModal({
       author_id: user.id,
       title: title.trim(),
       content: content.trim(),
-      community_id: communityId,
+      community_id: null,
       status,
       image_path: uploadedPath,
       image_url: uploadedUrl,

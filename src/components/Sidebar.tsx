@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSidebar } from "@/components/SidebarContext";
 import CreateCommunityModal from "@/components/CreateCommunityModal";
@@ -19,13 +19,26 @@ export default function Sidebar() {
   const router = useRouter();
   const { open, close } = useSidebar();
   const [globalRole, setGlobalRole] = useState<string>("user");
-  const [adminMode, setAdminMode] = useState(false);
+  const [adminMode, setAdminMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("sidebar-admin-mode") === "admin";
+  });
   const [loggingOut, setLoggingOut] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [yourCommunities, setYourCommunities] = useState<MyHobby[]>([]);
+  const cachedUserCommunitiesRef = useRef<MyHobby[] | null>(null);
+  const cachedAdminCommunitiesRef = useRef<MyHobby[] | null>(null);
+  const adminModeRef = useRef(adminMode);
+  const loadRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    adminModeRef.current = adminMode;
+  }, [adminMode]);
 
   const loadCommunities = useCallback(async () => {
+    const requestId = ++loadRequestIdRef.current;
+    const modeAtStart = adminModeRef.current;
     const supabase = createClient();
     const {
       data: { user },
@@ -40,9 +53,18 @@ export default function Sidebar() {
     const role = (profile as { role: string } | null)?.role ?? "user";
     setGlobalRole(role);
 
+    if (role === "admin") {
+      const cached = modeAtStart
+        ? cachedAdminCommunitiesRef.current
+        : cachedUserCommunitiesRef.current;
+      if (cached) {
+        setYourCommunities(cached);
+      }
+    }
+
     const list: MyHobby[] = [];
 
-    if (role === "admin" && adminMode) {
+    if (role === "admin" && modeAtStart) {
       const { data: allCommunities } = await supabase
         .from("hobbies")
         .select("id, title, category")
@@ -54,6 +76,14 @@ export default function Sidebar() {
         }
       }
 
+      if (
+        requestId !== loadRequestIdRef.current ||
+        modeAtStart !== adminModeRef.current
+      ) {
+        return;
+      }
+
+      cachedAdminCommunitiesRef.current = list;
       setYourCommunities(list);
       return;
     }
@@ -84,23 +114,26 @@ export default function Sidebar() {
       }
     }
 
+    if (
+      requestId !== loadRequestIdRef.current ||
+      modeAtStart !== adminModeRef.current
+    ) {
+      return;
+    }
+
+    cachedUserCommunitiesRef.current = list;
     setYourCommunities(list);
-  }, [adminMode]);
+  }, []);
 
   useEffect(() => {
     loadCommunities();
   }, [loadCommunities]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("sidebar-admin-mode");
-    setAdminMode(stored === "admin");
-  }, []);
-
-  useEffect(() => {
     if (globalRole !== "admin") return;
     if (typeof window === "undefined") return;
     window.localStorage.setItem("sidebar-admin-mode", adminMode ? "admin" : "user");
+    document.cookie = `sidebar-admin-mode=${adminMode ? "admin" : "user"}; path=/; max-age=31536000; samesite=lax`;
   }, [adminMode, globalRole]);
 
   useEffect(() => {
@@ -124,6 +157,7 @@ export default function Sidebar() {
             filter: `user_id=eq.${user.id}`,
           },
           () => {
+            cachedUserCommunitiesRef.current = null;
             void loadCommunities();
           },
         )
@@ -142,6 +176,20 @@ export default function Sidebar() {
   }, [loadCommunities]);
 
   useEffect(() => {
+    function onMembershipChanged() {
+      cachedUserCommunitiesRef.current = null;
+      cachedAdminCommunitiesRef.current = null;
+      void loadCommunities();
+      router.refresh();
+    }
+
+    window.addEventListener("community-membership-changed", onMembershipChanged);
+    return () => {
+      window.removeEventListener("community-membership-changed", onMembershipChanged);
+    };
+  }, [loadCommunities, router]);
+
+  useEffect(() => {
     close();
   }, [pathname, close]);
 
@@ -158,11 +206,24 @@ export default function Sidebar() {
   }
 
   function handleCreated() {
+    cachedUserCommunitiesRef.current = null;
+    cachedAdminCommunitiesRef.current = null;
     loadCommunities();
   }
 
   function handleSetAdminMode(nextMode: boolean) {
+    // Switch list immediately from cache when available.
+    const cached = nextMode
+      ? cachedAdminCommunitiesRef.current
+      : cachedUserCommunitiesRef.current;
+    if (cached) {
+      setYourCommunities(cached);
+    }
     setAdminMode(nextMode);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("sidebar-admin-mode", nextMode ? "admin" : "user");
+      document.cookie = `sidebar-admin-mode=${nextMode ? "admin" : "user"}; path=/; max-age=31536000; samesite=lax`;
+    }
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("admin-mode-changed", {
@@ -170,6 +231,7 @@ export default function Sidebar() {
         }),
       );
     }
+    router.refresh();
   }
 
   return (
@@ -230,7 +292,7 @@ export default function Sidebar() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
               </svg>
             } />
-            {globalRole === "admin" && (
+            {globalRole === "admin" && adminMode && (
               <NavItem href="/admin" label="Admin" pathname={pathname} icon={
                 <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" strokeWidth={1.7} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />

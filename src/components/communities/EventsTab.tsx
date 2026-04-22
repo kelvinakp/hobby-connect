@@ -33,7 +33,10 @@ const STATUS_COLORS: Record<Event["status"], string> = {
 
 export default function EventsTab({ communityId, userId, userRole }: Props) {
   const supabase = createClient();
-  const isMod = userRole === "admin" || userRole === "moderator";
+  const [adminMode, setAdminMode] = useState(true);
+  const isMod =
+    userRole === "moderator" ||
+    (userRole === "admin" && adminMode);
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +50,22 @@ export default function EventsTab({ communityId, userId, userRole }: Props) {
   const [requiredSkill, setRequiredSkill] = useState<Event["required_skill"]>("beginner");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    function updateModeFromStorage() {
+      const modeValue =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("sidebar-admin-mode")
+          : null;
+      setAdminMode(modeValue !== "user");
+    }
+
+    updateModeFromStorage();
+    window.addEventListener("admin-mode-changed", updateModeFromStorage);
+    return () => {
+      window.removeEventListener("admin-mode-changed", updateModeFromStorage);
+    };
+  }, []);
 
   useEffect(() => {
     async function load() {

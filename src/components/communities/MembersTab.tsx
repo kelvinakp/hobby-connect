@@ -29,7 +29,26 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
   const [members, setMembers] = useState<Member[]>([]);
   const [creatorProfile, setCreatorProfile] = useState<Member["profiles"]>(null);
   const [loading, setLoading] = useState(true);
-  const isMod = userRole === "moderator" || userRole === "admin";
+  const [adminMode, setAdminMode] = useState(true);
+  const isMod =
+    userRole === "moderator" ||
+    (userRole === "admin" && adminMode);
+
+  useEffect(() => {
+    function updateModeFromStorage() {
+      const modeValue =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("sidebar-admin-mode")
+          : null;
+      setAdminMode(modeValue !== "user");
+    }
+
+    updateModeFromStorage();
+    window.addEventListener("admin-mode-changed", updateModeFromStorage);
+    return () => {
+      window.removeEventListener("admin-mode-changed", updateModeFromStorage);
+    };
+  }, []);
 
   useEffect(() => {
     async function load() {

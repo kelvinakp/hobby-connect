@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Skill } from "@/lib/profile-data";
@@ -34,6 +35,7 @@ type HobbyWithProfile = {
 
 export default function HobbyFeed() {
   const supabase = createClient();
+  const router = useRouter();
   const { query: searchQuery, category: selectedCategory, setCategory, clear, ALL_TAG } = useSearch();
 
   const [hobbies, setHobbies] = useState<HobbyWithProfile[]>([]);
@@ -161,10 +163,7 @@ export default function HobbyFeed() {
       } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
 
-      const adminMode =
-        typeof window !== "undefined" &&
-        window.localStorage.getItem("sidebar-admin-mode") === "admin";
-      const scope = await getCommunitySearchScope(supabase, { adminMode });
+      const scope = await getCommunitySearchScope(supabase);
       setCanSearchAllCommunities(scope.canSearchAllCommunities);
       setSearchableCommunityIds(scope.searchableCommunityIds);
 
@@ -189,10 +188,7 @@ export default function HobbyFeed() {
   useEffect(() => {
     function onModeChanged() {
       void (async () => {
-        const adminMode =
-          typeof window !== "undefined" &&
-          window.localStorage.getItem("sidebar-admin-mode") === "admin";
-        const scope = await getCommunitySearchScope(supabase, { adminMode });
+        const scope = await getCommunitySearchScope(supabase);
         setCanSearchAllCommunities(scope.canSearchAllCommunities);
         setSearchableCommunityIds(scope.searchableCommunityIds);
         await fetchHobbies(searchQuery, selectedCategory);
@@ -244,6 +240,8 @@ export default function HobbyFeed() {
           ...prev,
           [hobbyId]: Math.max(0, (prev[hobbyId] ?? 0) - 1),
         }));
+        window.dispatchEvent(new CustomEvent("community-membership-changed"));
+        router.refresh();
       } else {
         console.error("[HobbyFeed] Leave failed:", error.message);
       }
@@ -258,8 +256,12 @@ export default function HobbyFeed() {
           ...prev,
           [hobbyId]: (prev[hobbyId] ?? 0) + 1,
         }));
+        window.dispatchEvent(new CustomEvent("community-membership-changed"));
+        router.refresh();
       } else if (error.code === "23505") {
         setJoinedIds((prev) => new Set(prev).add(hobbyId));
+        window.dispatchEvent(new CustomEvent("community-membership-changed"));
+        router.refresh();
       } else {
         console.error("[HobbyFeed] Join failed:", error.message);
       }

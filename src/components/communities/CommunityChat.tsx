@@ -34,11 +34,30 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
   const [loading, setLoading] = useState(true);
   const [banningId, setBanningId] = useState<string | null>(null);
   const [isBanned, setIsBanned] = useState(false);
+  const [adminMode, setAdminMode] = useState(true);
   const [sendError, setSendError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const profileCacheRef = useRef<Map<string, Message["profiles"]>>(new Map());
 
-  const isMod = userRole === "admin" || userRole === "moderator";
+  const isMod =
+    userRole === "moderator" ||
+    (userRole === "admin" && adminMode);
+
+  useEffect(() => {
+    function updateModeFromStorage() {
+      const modeValue =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("sidebar-admin-mode")
+          : null;
+      setAdminMode(modeValue !== "user");
+    }
+
+    updateModeFromStorage();
+    window.addEventListener("admin-mode-changed", updateModeFromStorage);
+    return () => {
+      window.removeEventListener("admin-mode-changed", updateModeFromStorage);
+    };
+  }, []);
 
   useEffect(() => {
     async function load() {

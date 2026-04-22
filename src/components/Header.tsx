@@ -42,10 +42,7 @@ export default function Header() {
 
   const loadSearchScope = useCallback(async () => {
     const supabase = createClient();
-    const adminMode =
-      typeof window !== "undefined" &&
-      window.localStorage.getItem("sidebar-admin-mode") === "admin";
-    const scope = await getCommunitySearchScope(supabase, { adminMode });
+    const scope = await getCommunitySearchScope(supabase);
     setCanSearchAllCommunities(scope.canSearchAllCommunities);
     setSearchableCommunityIds(scope.searchableCommunityIds);
   }, []);
@@ -79,7 +76,7 @@ export default function Header() {
 
   const searchCommunities = useCallback(async (q: string) => {
     const normalized = q.trim();
-    if (normalized.length < 2) {
+    if (normalized.length < 1) {
       setResults([]);
       setSearching(false);
       return;
@@ -93,11 +90,12 @@ export default function Header() {
 
     setSearching(true);
     const supabase = createClient();
-    const pattern = `%${normalized}%`;
+    const startsWith = `${normalized}%`;
+    const contains = `%${normalized}%`;
     let queryBuilder = supabase
       .from("hobbies")
       .select("id, title, description, category")
-      .or(`title.ilike.${pattern},description.ilike.${pattern}`)
+      .or(`title.ilike.${startsWith},description.ilike.${contains}`)
       .order("created_at", { ascending: false });
 
     if (!canSearchAllCommunities) {
@@ -136,7 +134,7 @@ export default function Header() {
     clear();
   }
 
-  const showDropdown = searchFocused && query.trim().length >= 2;
+  const showDropdown = searchFocused && query.trim().length >= 1;
 
   return (
     <header className="fixed left-0 right-0 top-0 z-30">

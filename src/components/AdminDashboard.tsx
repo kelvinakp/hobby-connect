@@ -68,6 +68,7 @@ export default function AdminDashboard() {
   const [publishedPosts, setPublishedPosts] = useState<PublishedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminMode, setAdminMode] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -75,6 +76,26 @@ export default function AdminDashboard() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [reviewingPostId, setReviewingPostId] = useState<string | null>(null);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const modeValue =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("sidebar-admin-mode")
+        : null;
+    setAdminMode(modeValue !== "user");
+  }, []);
+
+  useEffect(() => {
+    function onModeChanged() {
+      const modeValue =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("sidebar-admin-mode")
+          : null;
+      setAdminMode(modeValue !== "user");
+    }
+    window.addEventListener("admin-mode-changed", onModeChanged);
+    return () => window.removeEventListener("admin-mode-changed", onModeChanged);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -345,6 +366,19 @@ export default function AdminDashboard() {
         >
           Go to Home
         </a>
+      </div>
+    );
+  }
+
+  if (!adminMode) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center dark:border-amber-800 dark:bg-amber-900/20">
+        <h2 className="text-lg font-semibold text-amber-700 dark:text-amber-300">
+          Admin features disabled in User Mode
+        </h2>
+        <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
+          Switch to Admin Mode from the sidebar to access this dashboard.
+        </p>
       </div>
     );
   }

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import CommunityTabs from "@/components/communities/CommunityTabs";
 import CommunityMembershipButton from "@/components/communities/CommunityMembershipButton";
@@ -20,6 +21,8 @@ interface Props {
 export default async function CommunityPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
+  const cookieStore = await cookies();
+  const adminMode = cookieStore.get("sidebar-admin-mode")?.value === "admin";
 
   const [{ data }, userRes] = await Promise.all([
     supabase
@@ -53,7 +56,10 @@ export default async function CommunityPage({ params }: Props) {
       .single();
 
     const globalRole = (profile as { role: string } | null)?.role ?? "user";
-    const privileged = isCreator || globalRole === "moderator" || globalRole === "admin";
+    const privileged =
+      isCreator ||
+      globalRole === "moderator" ||
+      (globalRole === "admin" && adminMode);
     if (privileged) {
       userRole = "moderator";
       canAccessCommunity = true;
@@ -113,7 +119,7 @@ export default async function CommunityPage({ params }: Props) {
             </div>
           </div>
         </div>
-        <CreatePostButton canManageCommunity={isCommunityCreator} />
+        <CreatePostButton mode="leader-submit" canManageCommunity={isCommunityCreator} />
       </div>
 
       <CommunityTabs

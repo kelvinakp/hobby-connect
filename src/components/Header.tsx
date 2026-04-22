@@ -108,13 +108,13 @@ export default function Header() {
   return (
     <header className="fixed left-0 right-0 top-0 z-30">
       <div className="flex h-14 items-center border-b border-charcoal-100/80 bg-white/70 backdrop-blur-xl dark:border-charcoal-700/60 dark:bg-charcoal-900/70">
-        <div className="flex w-full items-center gap-3 px-4 sm:px-6">
+        <div className="mx-auto grid w-full max-w-[1500px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 lg:grid-cols-[18rem_minmax(0,1fr)_auto] lg:gap-6 xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
           {/* Left: menu + logo */}
           <div className="flex shrink-0 items-center gap-3">
             <button
               type="button"
               onClick={toggle}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-charcoal-500 transition-colors hover:bg-charcoal-100 hover:text-charcoal dark:text-charcoal-400 dark:hover:bg-charcoal-700 dark:hover:text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-charcoal-500 transition-colors hover:bg-charcoal-100 hover:text-charcoal dark:text-charcoal-400 dark:hover:bg-charcoal-700 dark:hover:text-white lg:hidden"
               aria-label="Toggle sidebar"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
@@ -136,7 +136,7 @@ export default function Header() {
           </div>
 
           {/* Center: search bar */}
-          <div ref={searchRef} className="relative mx-auto w-full max-w-md">
+          <div ref={searchRef} className="relative w-full max-w-md lg:mx-auto lg:max-w-3xl">
             <svg
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-charcoal-300 dark:text-charcoal-500"
               fill="none"
@@ -213,7 +213,7 @@ export default function Header() {
           </div>
 
           {/* Right: actions */}
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1 xl:justify-self-end">
             {/* Notification bell */}
             <div ref={dropdownRef} className="relative">
               <button

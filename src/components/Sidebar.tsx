@@ -97,7 +97,7 @@ export default function Sidebar() {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden ${
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={close}
@@ -105,12 +105,12 @@ export default function Sidebar() {
 
       {/* Drawer */}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-hidden bg-white shadow-2xl shadow-charcoal-900/10 transition-transform duration-300 ease-[cubic-bezier(.4,0,.2,1)] dark:bg-charcoal-900 dark:shadow-black/40 ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-hidden bg-white shadow-2xl shadow-charcoal-900/10 transition-transform duration-300 ease-[cubic-bezier(.4,0,.2,1)] dark:bg-charcoal-900 dark:shadow-black/40 lg:sticky lg:top-[4.5rem] lg:z-10 lg:h-[calc(100vh-5rem)] lg:rounded-2xl lg:border lg:border-charcoal-100/80 lg:shadow-sm lg:shadow-charcoal-900/5 lg:dark:border-charcoal-700/60 lg:dark:shadow-black/20 lg:translate-x-0 lg:transition-none ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand header */}
-        <div className="flex items-center justify-between px-5 py-5">
+        <div className="flex items-center justify-between px-5 py-5 lg:hidden">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-brand-600 shadow-lg shadow-brand/25">
               <svg className="h-[18px] w-[18px] text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -125,7 +125,7 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={close}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-charcoal-400 transition-colors hover:bg-charcoal-100 hover:text-charcoal-600 dark:text-charcoal-500 dark:hover:bg-charcoal-700 dark:hover:text-charcoal-200"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-charcoal-400 transition-colors hover:bg-charcoal-100 hover:text-charcoal-600 dark:text-charcoal-500 dark:hover:bg-charcoal-700 dark:hover:text-charcoal-200 lg:hidden"
             aria-label="Close sidebar"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

@@ -60,13 +60,20 @@ export default function CommunityTabs({
     return "Open Chat" as Tab;
   }, [searchParams]);
   const [active, setActive] = useState<Tab>(tabFromQuery);
+  const [loadedTabs, setLoadedTabs] = useState<Record<Tab, boolean>>({
+    "Open Chat": true,
+    Events: tabFromQuery === "Events",
+    Members: tabFromQuery === "Members",
+  });
 
   useEffect(() => {
     setActive(tabFromQuery);
+    setLoadedTabs((prev) => ({ ...prev, [tabFromQuery]: true }));
   }, [tabFromQuery]);
 
   function setTabAndUrl(tab: Tab) {
     setActive(tab);
+    setLoadedTabs((prev) => ({ ...prev, [tab]: true }));
     const params = new URLSearchParams(searchParams.toString());
     const value = tab === "Open Chat" ? "chat" : tab.toLowerCase();
     params.set("tab", value);
@@ -117,12 +124,16 @@ export default function CommunityTabs({
       </div>
 
       <div className="mt-4 flex min-h-0 flex-1 flex-col">
-        {active === "Open Chat" ? (
+        {loadedTabs["Open Chat"] && active === "Open Chat" ? (
           <CommunityChat communityId={communityId} userId={userId} userRole={userRole} />
-        ) : active === "Events" ? (
+        ) : loadedTabs.Events && active === "Events" ? (
           <EventsTab communityId={communityId} userId={userId} userRole={userRole} />
-        ) : (
+        ) : loadedTabs.Members && active === "Members" ? (
           <MembersTab communityId={communityId} createdBy={createdBy} userId={userId} userRole={userRole} />
+        ) : (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+          </div>
         )}
       </div>
     </div>

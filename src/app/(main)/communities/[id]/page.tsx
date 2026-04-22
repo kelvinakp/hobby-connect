@@ -20,18 +20,21 @@ export default async function CommunityPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("hobbies")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const [{ data }, userRes] = await Promise.all([
+    supabase
+      .from("hobbies")
+      .select("*")
+      .eq("id", id)
+      .single(),
+    supabase.auth.getUser(),
+  ]);
 
   const hobby = data as HobbyRow | null;
   if (!hobby) notFound();
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = userRes;
 
   let userRole: string | null = null;
   let canAccessCommunity = false;
@@ -47,8 +50,8 @@ export default async function CommunityPage({ params }: Props) {
       .single();
 
     const globalRole = (profile as { role: string } | null)?.role ?? "user";
-
-    if (isCreator || globalRole === "moderator" || globalRole === "admin") {
+    const privileged = isCreator || globalRole === "moderator" || globalRole === "admin";
+    if (privileged) {
       userRole = "moderator";
       canAccessCommunity = true;
       isPrivileged = true;

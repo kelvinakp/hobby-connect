@@ -11,7 +11,7 @@ interface MyHobby {
   id: string;
   title: string;
   category: string | null;
-  kind: "created" | "joined";
+  kind: "created" | "joined" | "admin";
 }
 
 export default function Sidebar() {
@@ -19,6 +19,7 @@ export default function Sidebar() {
   const router = useRouter();
   const { open, close } = useSidebar();
   const [globalRole, setGlobalRole] = useState<string>("user");
+  const [adminMode, setAdminMode] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -36,9 +37,26 @@ export default function Sidebar() {
       .select("role")
       .eq("id", user.id)
       .single();
-    setGlobalRole((profile as { role: string } | null)?.role ?? "user");
+    const role = (profile as { role: string } | null)?.role ?? "user";
+    setGlobalRole(role);
 
     const list: MyHobby[] = [];
+
+    if (role === "admin" && adminMode) {
+      const { data: allCommunities } = await supabase
+        .from("hobbies")
+        .select("id, title, category")
+        .order("created_at", { ascending: false });
+
+      if (allCommunities) {
+        for (const h of allCommunities as { id: string; title: string; category: string | null }[]) {
+          list.push({ ...h, kind: "admin" });
+        }
+      }
+
+      setYourCommunities(list);
+      return;
+    }
 
     const { data: created } = await supabase
       .from("hobbies")
@@ -67,10 +85,60 @@ export default function Sidebar() {
     }
 
     setYourCommunities(list);
-  }, []);
+  }, [adminMode]);
 
   useEffect(() => {
     loadCommunities();
+  }, [loadCommunities]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("sidebar-admin-mode");
+    setAdminMode(stored === "admin");
+  }, []);
+
+  useEffect(() => {
+    if (globalRole !== "admin") return;
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("sidebar-admin-mode", adminMode ? "admin" : "user");
+  }, [adminMode, globalRole]);
+
+  useEffect(() => {
+    let channelRef: ReturnType<typeof createClient>["channel"] extends (...args: infer P) => infer R ? R : never;
+    const supabase = createClient();
+
+    async function watchMembershipChanges() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const channel = supabase
+        .channel(`sidebar-interests-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "interests",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            void loadCommunities();
+          },
+        )
+        .subscribe();
+
+      channelRef = channel;
+    }
+
+    void watchMembershipChanges();
+
+    return () => {
+      if (channelRef) {
+        supabase.removeChannel(channelRef);
+      }
+    };
   }, [loadCommunities]);
 
   useEffect(() => {
@@ -91,6 +159,17 @@ export default function Sidebar() {
 
   function handleCreated() {
     loadCommunities();
+  }
+
+  function handleSetAdminMode(nextMode: boolean) {
+    setAdminMode(nextMode);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("admin-mode-changed", {
+          detail: { mode: nextMode ? "admin" : "user" },
+        }),
+      );
+    }
   }
 
   return (
@@ -160,6 +239,38 @@ export default function Sidebar() {
             )}
           </nav>
 
+          {globalRole === "admin" && (
+            <div className="mb-4 rounded-xl border border-charcoal-100 p-2 dark:border-charcoal-700">
+              <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-charcoal-300 dark:text-charcoal-600">
+                View Mode
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleSetAdminMode(false)}
+                  className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                    !adminMode
+                      ? "bg-brand text-white"
+                      : "bg-charcoal-50 text-charcoal-500 hover:bg-charcoal-100 dark:bg-charcoal-800 dark:text-charcoal-300 dark:hover:bg-charcoal-700"
+                  }`}
+                >
+                  User Mode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetAdminMode(true)}
+                  className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                    adminMode
+                      ? "bg-brand text-white"
+                      : "bg-charcoal-50 text-charcoal-500 hover:bg-charcoal-100 dark:bg-charcoal-800 dark:text-charcoal-300 dark:hover:bg-charcoal-700"
+                  }`}
+                >
+                  Admin Mode
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Create Community button */}
           <button
             type="button"
@@ -216,9 +327,11 @@ export default function Sidebar() {
                   <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                     c.kind === "created"
                       ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
-                      : "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400"
+                      : c.kind === "joined"
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400"
+                        : "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400"
                   }`}>
-                    {c.kind === "created" ? "Owner" : "Joined"}
+                    {c.kind === "created" ? "Owner" : c.kind === "joined" ? "Joined" : "Admin"}
                   </span>
                 </Link>
               ))}

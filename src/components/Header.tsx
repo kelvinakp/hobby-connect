@@ -40,16 +40,29 @@ export default function Header() {
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    async function loadSearchScope() {
-      const supabase = createClient();
-      const scope = await getCommunitySearchScope(supabase);
-      setCanSearchAllCommunities(scope.canSearchAllCommunities);
-      setSearchableCommunityIds(scope.searchableCommunityIds);
-    }
-
-    loadSearchScope();
+  const loadSearchScope = useCallback(async () => {
+    const supabase = createClient();
+    const adminMode =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("sidebar-admin-mode") === "admin";
+    const scope = await getCommunitySearchScope(supabase, { adminMode });
+    setCanSearchAllCommunities(scope.canSearchAllCommunities);
+    setSearchableCommunityIds(scope.searchableCommunityIds);
   }, []);
+
+  useEffect(() => {
+    void loadSearchScope();
+  }, [loadSearchScope]);
+
+  useEffect(() => {
+    function onModeChanged() {
+      void loadSearchScope();
+    }
+    window.addEventListener("admin-mode-changed", onModeChanged);
+    return () => {
+      window.removeEventListener("admin-mode-changed", onModeChanged);
+    };
+  }, [loadSearchScope]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

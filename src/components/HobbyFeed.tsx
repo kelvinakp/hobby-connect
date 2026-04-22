@@ -67,12 +67,16 @@ export default function HobbyFeed() {
           .select("id, title, description, category, created_by, created_at")
           .order("created_at", { ascending: false });
 
+        if (!canSearchAllCommunities) {
+          if (searchableCommunityIds.length === 0) {
+            return { data: [], error: null };
+          }
+          q = q.in("id", searchableCommunityIds);
+        }
+
         if (searchTerm) {
           const pattern = `%${searchTerm}%`;
           q = q.or(`title.ilike.${pattern},description.ilike.${pattern}`);
-          if (!canSearchAllCommunities) {
-            q = q.in("id", searchableCommunityIds);
-          }
         }
 
         if (applyCat && cat !== ALL_TAG) {
@@ -157,7 +161,10 @@ export default function HobbyFeed() {
       } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
 
-      const scope = await getCommunitySearchScope(supabase);
+      const adminMode =
+        typeof window !== "undefined" &&
+        window.localStorage.getItem("sidebar-admin-mode") === "admin";
+      const scope = await getCommunitySearchScope(supabase, { adminMode });
       setCanSearchAllCommunities(scope.canSearchAllCommunities);
       setSearchableCommunityIds(scope.searchableCommunityIds);
 
@@ -178,6 +185,25 @@ export default function HobbyFeed() {
 
     init();
   }, [supabase, fetchHobbies]);
+
+  useEffect(() => {
+    function onModeChanged() {
+      void (async () => {
+        const adminMode =
+          typeof window !== "undefined" &&
+          window.localStorage.getItem("sidebar-admin-mode") === "admin";
+        const scope = await getCommunitySearchScope(supabase, { adminMode });
+        setCanSearchAllCommunities(scope.canSearchAllCommunities);
+        setSearchableCommunityIds(scope.searchableCommunityIds);
+        await fetchHobbies(searchQuery, selectedCategory);
+      })();
+    }
+
+    window.addEventListener("admin-mode-changed", onModeChanged);
+    return () => {
+      window.removeEventListener("admin-mode-changed", onModeChanged);
+    };
+  }, [supabase, fetchHobbies, searchQuery, selectedCategory]);
 
   /* ── Re-fetch when filters change (debounced for search) ── */
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

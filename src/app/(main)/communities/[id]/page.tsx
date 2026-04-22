@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CommunityTabs from "@/components/communities/CommunityTabs";
+import CommunityMembershipButton from "@/components/communities/CommunityMembershipButton";
 
 interface HobbyRow {
   id: string;
@@ -34,6 +35,8 @@ export default async function CommunityPage({ params }: Props) {
 
   let userRole: string | null = null;
   let canAccessCommunity = false;
+  let isJoined = false;
+  let isPrivileged = false;
   if (user) {
     const isCreator = hobby.created_by === user.id;
 
@@ -48,6 +51,8 @@ export default async function CommunityPage({ params }: Props) {
     if (isCreator || globalRole === "moderator" || globalRole === "admin") {
       userRole = "moderator";
       canAccessCommunity = true;
+      isPrivileged = true;
+      isJoined = true;
     } else {
       const { data: myMembership } = await supabase
         .from("interests")
@@ -58,6 +63,7 @@ export default async function CommunityPage({ params }: Props) {
       if (myMembership) {
         userRole = "member";
         canAccessCommunity = true;
+        isJoined = true;
       }
     }
   }
@@ -92,6 +98,12 @@ export default async function CommunityPage({ params }: Props) {
                   {userRole === "moderator" ? "Community Leader" : "Member"}
                 </span>
               )}
+              <CommunityMembershipButton
+                communityId={id}
+                userId={user?.id ?? null}
+                initialJoined={isJoined}
+                isPrivileged={isPrivileged}
+              />
             </div>
           </div>
         </div>

@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import CreatePostModal from "@/components/CreatePostModal";
 
-export default function CreatePostButton() {
+interface Props {
+  communityId?: string | null;
+  canManageCommunity?: boolean;
+}
+
+export default function CreatePostButton({ communityId = null, canManageCommunity = false }: Props) {
   const [role, setRole] = useState<string>("user");
   const [showModal, setShowModal] = useState(false);
 
@@ -24,7 +29,8 @@ export default function CreatePostButton() {
     load();
   }, []);
 
-  if (role !== "admin" && role !== "moderator") return null;
+  const canPost = role === "admin" || role === "moderator" || canManageCommunity;
+  if (!canPost) return null;
 
   return (
     <>
@@ -44,6 +50,8 @@ export default function CreatePostButton() {
       <CreatePostModal
         open={showModal}
         onClose={() => setShowModal(false)}
+        communityId={communityId}
+        canManageCommunity={canManageCommunity}
         onCreated={() => {
           window.dispatchEvent(new CustomEvent("posts:refresh"));
           setShowModal(false);

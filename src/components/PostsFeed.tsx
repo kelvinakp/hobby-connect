@@ -31,6 +31,7 @@ export default function PostsFeed() {
       .from("posts")
       .select("id, title, content, status, image_url, created_at")
       .eq("status", "PUBLISHED")
+      .is("community_id", null)
       .order("created_at", { ascending: false })
       .range(from, to);
   }

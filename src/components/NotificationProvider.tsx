@@ -54,6 +54,7 @@ export default function NotificationProvider({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toast, setToast] = useState<Notification | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const seenNotificationIdsRef = useRef<Set<string>>(new Set());
 
   const ownedHobbyIdsRef = useRef<Set<string>>(new Set());
   const watchedHobbyIdsRef = useRef<Set<string>>(new Set());
@@ -64,6 +65,16 @@ export default function NotificationProvider({
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToast(null), 5000);
   }, []);
+
+  const pushNotification = useCallback(
+    (notif: Notification) => {
+      if (seenNotificationIdsRef.current.has(notif.id)) return;
+      seenNotificationIdsRef.current.add(notif.id);
+      setNotifications((prev) => [notif, ...prev]);
+      showToast(notif);
+    },
+    [showToast],
+  );
 
   useEffect(() => {
     let interestChannelRef: ReturnType<typeof supabase.channel> | null = null;
@@ -144,8 +155,22 @@ export default function NotificationProvider({
               created_at: string;
             };
 
+            // Keep watched communities in sync when current user joins/leaves.
+            if (record.user_id === user.id) {
+              watchedHobbyIdsRef.current.add(record.hobby_id);
+              if (!hobbyTitlesRef.current.has(record.hobby_id)) {
+                const { data: hobby } = await supabase
+                  .from("hobbies")
+                  .select("id, title")
+                  .eq("id", record.hobby_id)
+                  .maybeSingle();
+                const row = hobby as { id: string; title: string } | null;
+                if (row?.title) hobbyTitlesRef.current.set(record.hobby_id, row.title);
+              }
+              return;
+            }
+
             if (!ownedHobbyIdsRef.current.has(record.hobby_id)) return;
-            if (record.user_id === user.id) return;
 
             const { data: profile } = await supabase
               .from("public_profiles")
@@ -171,8 +196,7 @@ export default function NotificationProvider({
               read: false,
             };
 
-            setNotifications((prev) => [notif, ...prev]);
-            showToast(notif);
+            pushNotification(notif);
           }
         )
         .on(
@@ -190,8 +214,11 @@ export default function NotificationProvider({
               created_at?: string;
             };
             if (!record.hobby_id || !record.user_id) return;
+            if (record.user_id === user.id) {
+              watchedHobbyIdsRef.current.delete(record.hobby_id);
+              return;
+            }
             if (!ownedHobbyIdsRef.current.has(record.hobby_id)) return;
-            if (record.user_id === user.id) return;
 
             const { data: profile } = await supabase
               .from("public_profiles")
@@ -217,8 +244,7 @@ export default function NotificationProvider({
               read: false,
             };
 
-            setNotifications((prev) => [notif, ...prev]);
-            showToast(notif);
+            pushNotification(notif);
           }
         )
         .subscribe();
@@ -270,8 +296,7 @@ export default function NotificationProvider({
               read: false,
             };
 
-            setNotifications((prev) => [notif, ...prev]);
-            showToast(notif);
+            pushNotification(notif);
           }
         )
         .subscribe();
@@ -286,7 +311,7 @@ export default function NotificationProvider({
       if (profileChannelRef) supabase.removeChannel(profileChannelRef);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
-  }, [supabase, showToast]);
+  }, [supabase, pushNotification]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -296,6 +321,7 @@ export default function NotificationProvider({
 
   function clearAll() {
     setNotifications([]);
+    seenNotificationIdsRef.current.clear();
   }
 
   return (

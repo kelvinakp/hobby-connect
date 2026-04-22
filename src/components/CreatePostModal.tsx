@@ -8,11 +8,19 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onCreated?: () => void;
+  communityId?: string | null;
+  canManageCommunity?: boolean;
 }
 
 const MAX_IMAGE_BYTES = 500 * 1024;
 
-export default function CreatePostModal({ open, onClose, onCreated }: Props) {
+export default function CreatePostModal({
+  open,
+  onClose,
+  onCreated,
+  communityId = null,
+  canManageCommunity = false,
+}: Props) {
   const supabase = createClient();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -130,7 +138,7 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
       author_id: user.id,
       title: title.trim(),
       content: content.trim(),
-      community_id: null,
+      community_id: communityId,
       status,
       image_path: uploadedPath,
       image_url: uploadedUrl,
@@ -200,7 +208,7 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
 
   if (!open) return null;
 
-  const canPost = role === "admin" || role === "moderator";
+  const canPost = role === "admin" || role === "moderator" || canManageCommunity;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">

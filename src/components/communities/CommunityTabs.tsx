@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import CommunityChat from "./CommunityChat";
 import EventsTab from "./EventsTab";
 import MembersTab from "./MembersTab";
@@ -49,7 +50,28 @@ export default function CommunityTabs({
   userRole,
   canAccessCommunity,
 }: Props) {
-  const [active, setActive] = useState<Tab>("Open Chat");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const tabFromQuery = useMemo(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "events") return "Events" as Tab;
+    if (tab === "members") return "Members" as Tab;
+    return "Open Chat" as Tab;
+  }, [searchParams]);
+  const [active, setActive] = useState<Tab>(tabFromQuery);
+
+  useEffect(() => {
+    setActive(tabFromQuery);
+  }, [tabFromQuery]);
+
+  function setTabAndUrl(tab: Tab) {
+    setActive(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    const value = tab === "Open Chat" ? "chat" : tab.toLowerCase();
+    params.set("tab", value);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   if (!canAccessCommunity) {
     return (
@@ -80,7 +102,7 @@ export default function CommunityTabs({
           return (
             <button
               key={tab.id}
-              onClick={() => setActive(tab.id)}
+              onClick={() => setTabAndUrl(tab.id)}
               className={`relative z-10 flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
                 isActive
                   ? "bg-brand text-white shadow-md shadow-brand/25"

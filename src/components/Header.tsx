@@ -297,9 +297,17 @@ export default function Header() {
 
 function NotificationRow({ notification }: { notification: Notification }) {
   const timeAgo = getRelativeTime(notification.createdAt);
+  const targetHref =
+    notification.type === "message"
+      ? `/communities/${notification.hobbyId}?tab=chat`
+      : `/communities/${notification.hobbyId}`;
 
   return (
-    <li className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-charcoal-50/60 dark:hover:bg-charcoal-700/40">
+    <li>
+      <Link
+        href={targetHref}
+        className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-charcoal-50/60 dark:hover:bg-charcoal-700/40"
+      >
       {notification.userAvatar ? (
         <Image
           src={notification.userAvatar}
@@ -316,16 +324,42 @@ function NotificationRow({ notification }: { notification: Notification }) {
       )}
       <div className="min-w-0 flex-1">
         <p className="text-xs leading-relaxed text-charcoal-600 dark:text-charcoal-200">
-          <span className="font-semibold">{notification.userName}</span>{" "}
-          is interested in{" "}
-          <span className="font-semibold text-brand dark:text-brand-300">
-            {notification.hobbyTitle}
-          </span>
+          {notification.type === "join" ? (
+            <>
+              <span className="font-semibold">{notification.userName}</span>{" "}
+              joined{" "}
+              <span className="font-semibold text-brand dark:text-brand-300">
+                {notification.hobbyTitle}
+              </span>
+            </>
+          ) : notification.type === "leave" ? (
+            <>
+              <span className="font-semibold">{notification.userName}</span>{" "}
+              left{" "}
+              <span className="font-semibold text-brand dark:text-brand-300">
+                {notification.hobbyTitle}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-semibold">{notification.userName}</span>{" "}
+              sent a message in{" "}
+              <span className="font-semibold text-brand dark:text-brand-300">
+                {notification.hobbyTitle}
+              </span>
+            </>
+          )}
         </p>
+        {notification.type === "message" && notification.messagePreview && (
+          <p className="mt-0.5 truncate text-[11px] text-charcoal-300 dark:text-charcoal-500">
+            "{notification.messagePreview}"
+          </p>
+        )}
         <p className="mt-0.5 text-[11px] text-charcoal-300 dark:text-charcoal-500" suppressHydrationWarning>
           {timeAgo}
         </p>
       </div>
+      </Link>
     </li>
   );
 }

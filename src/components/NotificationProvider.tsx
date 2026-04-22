@@ -15,10 +15,13 @@ import { getDisplayName } from "@/lib/display-name";
 
 export interface Notification {
   id: string;
+  type: "join" | "leave" | "message";
+  hobbyId: string;
   userName: string;
   userAvatar: string | null;
   hobbyTitle: string;
   createdAt: string;
+  messagePreview?: string;
   read: boolean;
 }
 
@@ -52,7 +55,8 @@ export default function NotificationProvider({
   const [toast, setToast] = useState<Notification | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const myHobbyIdsRef = useRef<Set<string>>(new Set());
+  const ownedHobbyIdsRef = useRef<Set<string>>(new Set());
+  const watchedHobbyIdsRef = useRef<Set<string>>(new Set());
   const hobbyTitlesRef = useRef<Map<string, string>>(new Map());
 
   const showToast = useCallback((notif: Notification) => {
@@ -63,6 +67,7 @@ export default function NotificationProvider({
 
   useEffect(() => {
     let interestChannelRef: ReturnType<typeof supabase.channel> | null = null;
+    let messageChannelRef: ReturnType<typeof supabase.channel> | null = null;
     let profileChannelRef: ReturnType<typeof supabase.channel> | null = null;
 
     async function setup() {
@@ -98,18 +103,31 @@ export default function NotificationProvider({
         .select("id, title")
         .eq("created_by", user.id);
 
-      if (!myHobbies || myHobbies.length === 0) return;
+      const { data: joinedRows } = await supabase
+        .from("interests")
+        .select("hobby_id, hobbies(title)")
+        .eq("user_id", user.id);
 
-      const ids = new Set<string>();
+      const ownedIds = new Set<string>();
+      const watchedIds = new Set<string>();
       const titles = new Map<string, string>();
-      for (const h of myHobbies as { id: string; title: string }[]) {
-        ids.add(h.id);
+      for (const h of (myHobbies ?? []) as { id: string; title: string }[]) {
+        ownedIds.add(h.id);
+        watchedIds.add(h.id);
         titles.set(h.id, h.title);
       }
-      myHobbyIdsRef.current = ids;
+      for (const row of (joinedRows ?? []) as {
+        hobby_id: string;
+        hobbies: { title: string } | null;
+      }[]) {
+        watchedIds.add(row.hobby_id);
+        if (row.hobbies?.title) titles.set(row.hobby_id, row.hobbies.title);
+      }
+      ownedHobbyIdsRef.current = ownedIds;
+      watchedHobbyIdsRef.current = watchedIds;
       hobbyTitlesRef.current = titles;
 
-      const channel = supabase
+      const interestChannel = supabase
         .channel("interest-notifications")
         .on(
           "postgres_changes",
@@ -126,12 +144,12 @@ export default function NotificationProvider({
               created_at: string;
             };
 
-            if (!myHobbyIdsRef.current.has(record.hobby_id)) return;
+            if (!ownedHobbyIdsRef.current.has(record.hobby_id)) return;
             if (record.user_id === user.id) return;
 
             const { data: profile } = await supabase
-              .from("profiles")
-              .select("first_name, last_name, avatar_url")
+              .from("public_profiles")
+              .select("id, first_name, last_name, avatar_url")
               .eq("id", record.user_id)
               .single();
 
@@ -143,6 +161,8 @@ export default function NotificationProvider({
 
             const notif: Notification = {
               id: record.id,
+              type: "join",
+              hobbyId: record.hobby_id,
               userName: getDisplayName(p, "Someone"),
               userAvatar: p?.avatar_url ?? null,
               hobbyTitle:
@@ -155,15 +175,114 @@ export default function NotificationProvider({
             showToast(notif);
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "interests",
+          },
+          async (payload) => {
+            const record = payload.old as {
+              id: string;
+              hobby_id?: string;
+              user_id?: string;
+              created_at?: string;
+            };
+            if (!record.hobby_id || !record.user_id) return;
+            if (!ownedHobbyIdsRef.current.has(record.hobby_id)) return;
+            if (record.user_id === user.id) return;
+
+            const { data: profile } = await supabase
+              .from("public_profiles")
+              .select("id, first_name, last_name, avatar_url")
+              .eq("id", record.user_id)
+              .single();
+
+            const p = profile as {
+              first_name?: string | null;
+              last_name?: string | null;
+              avatar_url: string | null;
+            } | null;
+
+            const notif: Notification = {
+              id: `leave-${record.id}`,
+              type: "leave",
+              hobbyId: record.hobby_id,
+              userName: getDisplayName(p, "Someone"),
+              userAvatar: p?.avatar_url ?? null,
+              hobbyTitle:
+                hobbyTitlesRef.current.get(record.hobby_id) ?? "your hobby",
+              createdAt: record.created_at ?? new Date().toISOString(),
+              read: false,
+            };
+
+            setNotifications((prev) => [notif, ...prev]);
+            showToast(notif);
+          }
+        )
         .subscribe();
 
-      interestChannelRef = channel;
+      interestChannelRef = interestChannel;
+
+      const messageChannel = supabase
+        .channel(`message-notifications-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+          },
+          async (payload) => {
+            const record = payload.new as {
+              id: string;
+              community_id: string;
+              user_id: string;
+              content: string;
+              created_at: string;
+            };
+            if (!watchedHobbyIdsRef.current.has(record.community_id)) return;
+            if (record.user_id === user.id) return;
+
+            const { data: profile } = await supabase
+              .from("public_profiles")
+              .select("id, first_name, last_name, avatar_url")
+              .eq("id", record.user_id)
+              .single();
+
+            const p = profile as {
+              first_name?: string | null;
+              last_name?: string | null;
+              avatar_url: string | null;
+            } | null;
+
+            const notif: Notification = {
+              id: `msg-${record.id}`,
+              type: "message",
+              hobbyId: record.community_id,
+              userName: getDisplayName(p, "Someone"),
+              userAvatar: p?.avatar_url ?? null,
+              hobbyTitle:
+                hobbyTitlesRef.current.get(record.community_id) ?? "community",
+              createdAt: record.created_at,
+              messagePreview: record.content,
+              read: false,
+            };
+
+            setNotifications((prev) => [notif, ...prev]);
+            showToast(notif);
+          }
+        )
+        .subscribe();
+      messageChannelRef = messageChannel;
     }
 
     setup();
 
     return () => {
       if (interestChannelRef) supabase.removeChannel(interestChannelRef);
+      if (messageChannelRef) supabase.removeChannel(messageChannelRef);
       if (profileChannelRef) supabase.removeChannel(profileChannelRef);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
@@ -208,11 +327,34 @@ export default function NotificationProvider({
                 {toast.userName}
               </p>
               <p className="mt-0.5 text-xs text-charcoal-400 dark:text-charcoal-300">
-                is interested in{" "}
-                <span className="font-semibold text-brand dark:text-brand-300">
-                  {toast.hobbyTitle}
-                </span>
+                {toast.type === "join" ? (
+                  <>
+                    joined{" "}
+                    <span className="font-semibold text-brand dark:text-brand-300">
+                      {toast.hobbyTitle}
+                    </span>
+                  </>
+                ) : toast.type === "leave" ? (
+                  <>
+                    left{" "}
+                    <span className="font-semibold text-brand dark:text-brand-300">
+                      {toast.hobbyTitle}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    sent a message in{" "}
+                    <span className="font-semibold text-brand dark:text-brand-300">
+                      {toast.hobbyTitle}
+                    </span>
+                  </>
+                )}
               </p>
+              {toast.type === "message" && toast.messagePreview && (
+                <p className="mt-1 truncate text-[11px] text-charcoal-300 dark:text-charcoal-500">
+                  "{toast.messagePreview}"
+                </p>
+              )}
             </div>
             <button
               type="button"

@@ -141,9 +141,9 @@ export default function Sidebar() {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-charcoal-300 dark:text-charcoal-600">Menu</p>
           </div>
           <nav className="mb-3 flex flex-col gap-0.5">
-            <NavItem href="/" label="Feed" pathname={pathname} icon={
+            <NavItem href="/" label="Uni Announcement" pathname={pathname} icon={
               <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" strokeWidth={1.7} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 6.948 15.87 4.2c1.66-.826 3.63.383 3.63 2.24v11.12c0 1.858-1.97 3.066-3.63 2.24l-5.53-2.748M10.34 6.948A3.75 3.75 0 0 0 6.75 10.5v3a3.75 3.75 0 0 0 3.59 3.552M10.34 6.948v10.104M6.75 10.5H3.75m3 3H3.75m3 0 1.5 4.5h2.25l-1.5-4.5" />
               </svg>
             } />
             <NavItem href="/profile" label="My Profile" pathname={pathname} icon={

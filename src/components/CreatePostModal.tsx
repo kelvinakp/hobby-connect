@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -299,11 +300,16 @@ export default function CreatePostModal({ open, onClose, onCreated }: Props) {
                   </p>
                 )}
                 {imagePreviewUrl && (
-                  <img
-                    src={imagePreviewUrl}
-                    alt=""
-                    className="mt-2 max-h-48 rounded-lg border border-charcoal-200 object-cover dark:border-charcoal-700"
-                  />
+                  <div className="relative mt-2 aspect-[16/9] w-full overflow-hidden rounded-lg border border-charcoal-200 dark:border-charcoal-700">
+                    <Image
+                      src={imagePreviewUrl}
+                      alt=""
+                      fill
+                      sizes="(max-width: 768px) 100vw, 640px"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
                 )}
               </div>
 

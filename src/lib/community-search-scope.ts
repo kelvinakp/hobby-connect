@@ -18,33 +18,10 @@ export async function getCommunitySearchScope(
       searchableCommunityIds: [],
     };
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  const role = (profile as { role?: string } | null)?.role ?? "user";
-  const privileged = role === "admin" || role === "moderator";
-
-  if (privileged) {
-    return {
-      canSearchAllCommunities: true,
-      searchableCommunityIds: [],
-    };
-  }
-
-  const [{ data: created }, { data: joined }] = await Promise.all([
-    supabase.from("hobbies").select("id").eq("created_by", user.id),
-    supabase.from("interests").select("hobby_id").eq("user_id", user.id),
-  ]);
-
-  const ids = new Set<string>();
-  for (const row of (created ?? []) as { id: string }[]) ids.add(row.id);
-  for (const row of (joined ?? []) as { hobby_id: string }[]) ids.add(row.hobby_id);
-
+  // Authenticated users (including regular users) can search all communities.
+  // Access to restricted tabs/details remains enforced elsewhere.
   return {
-    canSearchAllCommunities: false,
-    searchableCommunityIds: Array.from(ids),
+    canSearchAllCommunities: true,
+    searchableCommunityIds: [],
   };
 }

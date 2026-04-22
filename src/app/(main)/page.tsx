@@ -1,5 +1,4 @@
 import PostsFeed from "@/components/PostsFeed";
-import CreatePostButton from "@/components/CreatePostButton";
 
 export default function Home() {
   return (
@@ -12,7 +11,6 @@ export default function Home() {
           Official updates and community announcements in one place.
         </p>
       </div>
-      <CreatePostButton />
       <PostsFeed />
     </div>
   );

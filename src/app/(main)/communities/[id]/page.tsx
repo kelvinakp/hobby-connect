@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CommunityTabs from "@/components/communities/CommunityTabs";
 import CommunityMembershipButton from "@/components/communities/CommunityMembershipButton";
+import CreatePostButton from "@/components/CreatePostButton";
 
 interface HobbyRow {
   id: string;
@@ -40,8 +41,10 @@ export default async function CommunityPage({ params }: Props) {
   let canAccessCommunity = false;
   let isJoined = false;
   let isPrivileged = false;
+  let isCommunityCreator = false;
   if (user) {
     const isCreator = hobby.created_by === user.id;
+    isCommunityCreator = isCreator;
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -110,6 +113,7 @@ export default async function CommunityPage({ params }: Props) {
             </div>
           </div>
         </div>
+        <CreatePostButton canManageCommunity={isCommunityCreator} />
       </div>
 
       <CommunityTabs

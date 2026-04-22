@@ -14,8 +14,6 @@ interface Member {
     first_name?: string | null;
     last_name?: string | null;
     avatar_url: string | null;
-    major: string | null;
-    role?: string;
   } | null;
 }
 
@@ -36,15 +34,23 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
   useEffect(() => {
     async function load() {
       const { data: cp } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, avatar_url, major, role")
+        .from("public_profiles")
+        .select("id, first_name, last_name, avatar_url")
         .eq("id", createdBy)
         .single();
-      setCreatorProfile(cp as Member["profiles"]);
+      setCreatorProfile(
+        cp
+          ? {
+              first_name: (cp as { first_name: string | null }).first_name,
+              last_name: (cp as { last_name: string | null }).last_name,
+              avatar_url: (cp as { avatar_url: string | null }).avatar_url,
+            }
+          : null
+      );
 
       const { data, error } = await supabase
         .from("interests")
-        .select("id, user_id, created_at, profiles(first_name, last_name, avatar_url, major, role)")
+        .select("id, user_id, created_at")
         .eq("hobby_id", communityId)
         .order("created_at", { ascending: true });
 
@@ -52,7 +58,31 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
         console.warn("[MembersTab] Could not load members:", error.message);
       }
 
-      setMembers((data as unknown as Member[]) ?? []);
+      const rows =
+        (data as { id: string; user_id: string; created_at: string }[] | null) ?? [];
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+      const profileMap = new Map<string, Member["profiles"]>();
+      if (userIds.length > 0) {
+        const { data: pp } = await supabase
+          .from("public_profiles")
+          .select("id, first_name, last_name, avatar_url")
+          .in("id", userIds);
+        (pp as { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[] | null)?.forEach(
+          (p) => {
+            profileMap.set(p.id, {
+              first_name: p.first_name,
+              last_name: p.last_name,
+              avatar_url: p.avatar_url,
+            });
+          }
+        );
+      }
+      setMembers(
+        rows.map((r) => ({
+          ...r,
+          profiles: profileMap.get(r.user_id) ?? null,
+        }))
+      );
       setLoading(false);
     }
     load();
@@ -108,9 +138,6 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
                   <span className="rounded-full bg-charcoal-100 px-2 py-0.5 text-[10px] font-medium text-charcoal-500 dark:bg-charcoal-600 dark:text-charcoal-300">You</span>
                 )}
               </div>
-              {creatorProfile?.major && (
-                <p className="mt-0.5 text-xs text-charcoal-500 dark:text-charcoal-400">{creatorProfile.major}</p>
-              )}
             </div>
           </div>
         </div>
@@ -155,9 +182,6 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
                         <span className="rounded-full bg-charcoal-100 px-2 py-0.5 text-[10px] font-medium text-charcoal-500 dark:bg-charcoal-600 dark:text-charcoal-300">You</span>
                       )}
                     </div>
-                    {m.profiles?.major && (
-                      <p className="mt-0.5 text-xs text-charcoal-400 dark:text-charcoal-500">{m.profiles.major}</p>
-                    )}
                   </div>
                   <span className="shrink-0 text-[11px] text-charcoal-400 dark:text-charcoal-500">
                     Joined {formatShortDate(m.created_at)}

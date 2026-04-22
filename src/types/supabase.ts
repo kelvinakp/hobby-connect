@@ -270,7 +270,16 @@ export type Database = {
       };
     };
 
-    Views: Record<string, never>;
+    Views: {
+      public_profiles: {
+        Row: {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          avatar_url: string | null;
+        };
+      };
+    };
     Functions: Record<string, never>;
 
     Enums: {

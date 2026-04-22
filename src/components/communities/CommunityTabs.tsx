@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import CommunityChat from "./CommunityChat";
 import EventsTab from "./EventsTab";
@@ -38,10 +39,38 @@ interface Props {
   createdBy: string;
   userId: string | null;
   userRole: string | null;
+  canAccessCommunity: boolean;
 }
 
-export default function CommunityTabs({ communityId, createdBy, userId, userRole }: Props) {
+export default function CommunityTabs({
+  communityId,
+  createdBy,
+  userId,
+  userRole,
+  canAccessCommunity,
+}: Props) {
   const [active, setActive] = useState<Tab>("Open Chat");
+
+  if (!canAccessCommunity) {
+    return (
+      <div className="mt-4 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-charcoal-200 bg-white p-8 text-center dark:border-charcoal-700 dark:bg-charcoal-800/40">
+        <div className="max-w-md">
+          <h3 className="text-base font-semibold text-charcoal dark:text-white">
+            Join this community to view details
+          </h3>
+          <p className="mt-1 text-sm text-charcoal-400 dark:text-charcoal-500">
+            Open Chat, Events, and Members are available after you join from Uni Announcement.
+          </p>
+          <Link
+            href="/"
+            className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-600"
+          >
+            Go to Uni Announcement
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

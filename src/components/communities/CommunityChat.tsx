@@ -17,7 +17,6 @@ interface Message {
     first_name: string | null;
     last_name: string | null;
     avatar_url: string | null;
-    is_banned?: boolean | null;
   } | null;
 }
 
@@ -56,7 +55,7 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
 
       const { data, error } = await supabase
         .from("messages")
-        .select("*, profiles(first_name, last_name, avatar_url, is_banned)")
+        .select("id, community_id, user_id, content, created_at")
         .eq("community_id", communityId)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -65,10 +64,39 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
         console.warn("[CommunityChat] Could not load messages:", error.message);
       }
 
-      const initial = ((data as Message[]) ?? []).reverse();
-      for (const msg of initial) {
-        if (msg.profiles) profileCacheRef.current.set(msg.user_id, msg.profiles);
+      const rows =
+        (data as {
+          id: string;
+          community_id: string;
+          user_id: string;
+          content: string;
+          created_at: string;
+        }[] | null) ?? [];
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+      const profileMap = new Map<string, Message["profiles"]>();
+      if (userIds.length > 0) {
+        const { data: pp } = await supabase
+          .from("public_profiles")
+          .select("id, first_name, last_name, avatar_url")
+          .in("id", userIds);
+        (pp as { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[] | null)?.forEach(
+          (p) => {
+            const profile = {
+              first_name: p.first_name,
+              last_name: p.last_name,
+              avatar_url: p.avatar_url,
+            };
+            profileMap.set(p.id, profile);
+            profileCacheRef.current.set(p.id, profile);
+          }
+        );
       }
+      const initial: Message[] = rows
+        .map((r) => ({
+          ...r,
+          profiles: profileMap.get(r.user_id) ?? null,
+        }))
+        .reverse();
       setMessages(initial);
       setLoading(false);
     }
@@ -91,11 +119,17 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
           let profile = profileCacheRef.current.get(record.user_id) ?? null;
           if (!profile) {
             const { data } = await supabase
-              .from("profiles")
-              .select("first_name, last_name, avatar_url, is_banned")
+              .from("public_profiles")
+              .select("id, first_name, last_name, avatar_url")
               .eq("id", record.user_id)
               .single();
-            profile = (data as Message["profiles"]) ?? null;
+            profile = data
+              ? {
+                  first_name: (data as { first_name: string | null }).first_name,
+                  last_name: (data as { last_name: string | null }).last_name,
+                  avatar_url: (data as { avatar_url: string | null }).avatar_url,
+                }
+              : null;
             if (profile) profileCacheRef.current.set(record.user_id, profile);
           }
 
@@ -207,7 +241,6 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
             {messages.map((msg) => {
               const isOwn = msg.user_id === userId;
               const initials = getInitials(msg.profiles);
-              const authorBanned = !!msg.profiles?.is_banned;
               return (
                 <div key={msg.id} className={`group/msg flex ${isOwn ? "justify-end" : "justify-start"}`}>
                   {/* Avatar (other users only) */}
@@ -251,7 +284,7 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
                         )}
                       </p>
                       <p className="text-sm leading-relaxed">
-                        {authorBanned && !isMod ? "This message has been hidden." : msg.content}
+                        {msg.content}
                       </p>
                       <p className={`mt-1 text-[10px] ${isOwn ? "text-white/70" : "text-charcoal-400 dark:text-charcoal-500"}`}>
                         {formatTime(msg.created_at)}

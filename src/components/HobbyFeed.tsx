@@ -13,7 +13,6 @@ type ProfileSnippet = {
   first_name?: string | null;
   last_name?: string | null;
   avatar_url?: string | null;
-  is_banned?: boolean | null;
   id?: string;
 };
 
@@ -48,10 +47,10 @@ export default function HobbyFeed() {
     async (search: string, cat: string) => {
       setFiltering(true);
 
-      async function attempt(profileSelect: string, applyCat: boolean) {
+      async function attempt(applyCat: boolean) {
         let q = supabase
           .from("hobbies")
-          .select(`*, ${profileSelect}`)
+          .select("id, title, description, category, created_by, created_at")
           .order("created_at", { ascending: false });
 
         if (search.trim()) {
@@ -66,27 +65,45 @@ export default function HobbyFeed() {
         return q;
       }
 
-      let { data, error } = await attempt(
-        "profiles(first_name, last_name, avatar_url, is_banned)",
-        true,
-      );
+      let { data, error } = await attempt(true);
 
       if (error?.message?.includes("does not exist")) {
         const hasCatError = error.message.includes("category");
         const applyCat = !hasCatError;
-        ({ data, error } = await attempt(
-          "profiles(first_name, last_name, avatar_url, is_banned)",
-          applyCat,
-        ));
+        ({ data, error } = await attempt(applyCat));
         if (error?.message?.includes("does not exist")) {
-          ({ data, error } = await attempt("profiles(id)", false));
+          ({ data, error } = await attempt(false));
         }
       }
 
       if (error) {
         console.error("[HobbyFeed] Failed to fetch hobbies:", error.message);
       }
-      const list = (data as unknown as HobbyWithProfile[]) ?? [];
+      const baseList =
+        (data as unknown as Omit<HobbyWithProfile, "profiles">[]) ?? [];
+      let list: HobbyWithProfile[] = baseList.map((h) => ({ ...h, profiles: null }));
+      if (baseList.length > 0) {
+        const creatorIds = Array.from(new Set(baseList.map((h) => h.created_by)));
+        const { data: pp } = await supabase
+          .from("public_profiles")
+          .select("id, first_name, last_name, avatar_url")
+          .in("id", creatorIds);
+        const profileMap = new Map<string, ProfileSnippet>();
+        (pp as { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[] | null)?.forEach(
+          (p) => {
+            profileMap.set(p.id, {
+              id: p.id,
+              first_name: p.first_name,
+              last_name: p.last_name,
+              avatar_url: p.avatar_url,
+            });
+          }
+        );
+        list = baseList.map((h) => ({
+          ...h,
+          profiles: profileMap.get(h.created_by) ?? null,
+        }));
+      }
       setHobbies(list);
 
       if (list.length > 0) {
@@ -158,22 +175,47 @@ export default function HobbyFeed() {
     };
   }, [searchQuery, selectedCategory, fetchHobbies, loading]);
 
-  /* ── Join hobby ── */
-  async function handleJoin(hobbyId: string) {
-    if (!userId || joinedIds.has(hobbyId)) return;
+  /* ── Join / Leave hobby ── */
+  async function handleToggleInterest(hobbyId: string, joined: boolean) {
+    if (!userId) return;
 
     setJoiningId(hobbyId);
 
-    const { error } = await supabase
-      .from("interests")
-      .insert({ hobby_id: hobbyId, user_id: userId });
-
-    if (!error) {
-      setJoinedIds((prev) => new Set(prev).add(hobbyId));
-    } else if (error.code === "23505") {
-      setJoinedIds((prev) => new Set(prev).add(hobbyId));
+    if (joined) {
+      const { error } = await supabase
+        .from("interests")
+        .delete()
+        .eq("hobby_id", hobbyId)
+        .eq("user_id", userId);
+      if (!error) {
+        setJoinedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(hobbyId);
+          return next;
+        });
+        setMemberCounts((prev) => ({
+          ...prev,
+          [hobbyId]: Math.max(0, (prev[hobbyId] ?? 0) - 1),
+        }));
+      } else {
+        console.error("[HobbyFeed] Leave failed:", error.message);
+      }
     } else {
-      console.error("[HobbyFeed] Join failed:", error.message);
+      const { error } = await supabase
+        .from("interests")
+        .insert({ hobby_id: hobbyId, user_id: userId });
+
+      if (!error) {
+        setJoinedIds((prev) => new Set(prev).add(hobbyId));
+        setMemberCounts((prev) => ({
+          ...prev,
+          [hobbyId]: (prev[hobbyId] ?? 0) + 1,
+        }));
+      } else if (error.code === "23505") {
+        setJoinedIds((prev) => new Set(prev).add(hobbyId));
+      } else {
+        console.error("[HobbyFeed] Join failed:", error.message);
+      }
     }
 
     setJoiningId(null);
@@ -204,9 +246,7 @@ export default function HobbyFeed() {
           ))}
         </div>
       ) : (() => {
-        const visibleHobbies = hobbies.filter(
-          (h) => !h.profiles?.is_banned || h.created_by === userId,
-        );
+        const visibleHobbies = hobbies;
         if (visibleHobbies.length === 0) {
           return (
             <NoResults
@@ -228,7 +268,7 @@ export default function HobbyFeed() {
                 userId={userId}
                 joined={joinedIds.has(hobby.id)}
                 joining={joiningId === hobby.id}
-                onJoin={handleJoin}
+                onToggleInterest={handleToggleInterest}
               />
             ))}
           </div>
@@ -246,14 +286,14 @@ function HobbyCard({
   userId,
   joined,
   joining,
-  onJoin,
+  onToggleInterest,
 }: {
   hobby: HobbyWithProfile;
   memberCount: number;
   userId: string | null;
   joined: boolean;
   joining: boolean;
-  onJoin: (id: string) => void;
+  onToggleInterest: (id: string, joined: boolean) => void;
 }) {
   const [showCreator, setShowCreator] = useState(false);
   const [extras, setExtras] = useState<CreatorExtras | null>(null);
@@ -314,11 +354,11 @@ function HobbyCard({
         {userId && !isOwner && (
           <button
             type="button"
-            disabled={joined || joining}
-            onClick={() => onJoin(hobby.id)}
+            disabled={joining}
+            onClick={() => onToggleInterest(hobby.id, joined)}
             className={`shrink-0 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
               joined
-                ? "border border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300"
+                ? "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/40"
                 : "bg-brand text-white shadow-md shadow-brand/25 hover:bg-brand-600 disabled:opacity-50"
             }`}
           >
@@ -329,10 +369,10 @@ function HobbyCard({
               </svg>
             ) : joined ? (
               <span className="flex items-center gap-1">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
-                Interested
+                Leave
               </span>
             ) : (
               "I'm Interested"

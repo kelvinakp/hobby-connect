@@ -13,8 +13,8 @@ export default async function UserProfilePage({ params }: Props) {
   const supabase = await createClient();
 
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, bio, major, avatar_url")
+    .from("public_profiles")
+    .select("id, first_name, last_name, avatar_url")
     .eq("id", id)
     .single();
 
@@ -60,9 +60,6 @@ export default async function UserProfilePage({ params }: Props) {
         <h1 className="text-2xl font-bold tracking-tight text-charcoal dark:text-white">
           {displayName}
         </h1>
-        {profile.major && (
-          <p className="mt-1 text-sm text-charcoal-400 dark:text-charcoal-300">{profile.major}</p>
-        )}
       </div>
 
       <div className="mx-auto max-w-xl space-y-6">
@@ -85,19 +82,8 @@ export default async function UserProfilePage({ params }: Props) {
             )}
             <div className="min-w-0">
               <p className="text-lg font-semibold text-charcoal dark:text-white">{displayName}</p>
-              {profile.major && (
-                <p className="mt-0.5 text-xs text-charcoal-300 dark:text-charcoal-500">
-                  {profile.major}
-                </p>
-              )}
             </div>
           </div>
-
-          {profile.bio && (
-            <p className="mt-4 rounded-lg bg-charcoal-50/50 px-3 py-2 text-sm leading-relaxed text-charcoal-500 dark:bg-charcoal-800/40 dark:text-charcoal-300">
-              {profile.bio}
-            </p>
-          )}
         </div>
 
         {/* Skills & hobbies */}

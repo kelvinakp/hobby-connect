@@ -33,6 +33,7 @@ export default async function CommunityPage({ params }: Props) {
   } = await supabase.auth.getUser();
 
   let userRole: string | null = null;
+  let canAccessCommunity = false;
   if (user) {
     const isCreator = hobby.created_by === user.id;
 
@@ -46,8 +47,18 @@ export default async function CommunityPage({ params }: Props) {
 
     if (isCreator || globalRole === "moderator" || globalRole === "admin") {
       userRole = "moderator";
+      canAccessCommunity = true;
     } else {
-      userRole = "member";
+      const { data: myMembership } = await supabase
+        .from("interests")
+        .select("id")
+        .eq("hobby_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (myMembership) {
+        userRole = "member";
+        canAccessCommunity = true;
+      }
     }
   }
 
@@ -91,6 +102,7 @@ export default async function CommunityPage({ params }: Props) {
         createdBy={hobby.created_by}
         userId={user?.id ?? null}
         userRole={userRole}
+        canAccessCommunity={canAccessCommunity}
       />
     </div>
   );

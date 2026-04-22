@@ -11,6 +11,7 @@ import {
 } from "@/components/NotificationProvider";
 import { useSidebar } from "@/components/SidebarContext";
 import { useSearch } from "@/components/SearchContext";
+import { getCommunitySearchScope } from "@/lib/community-search-scope";
 import { createClient } from "@/lib/supabase/client";
 
 interface SearchResult {
@@ -31,9 +32,24 @@ export default function Header() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [canSearchAllCommunities, setCanSearchAllCommunities] = useState(false);
+  const [searchableCommunityIds, setSearchableCommunityIds] = useState<string[]>(
+    []
+  );
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    async function loadSearchScope() {
+      const supabase = createClient();
+      const scope = await getCommunitySearchScope(supabase);
+      setCanSearchAllCommunities(scope.canSearchAllCommunities);
+      setSearchableCommunityIds(scope.searchableCommunityIds);
+    }
+
+    loadSearchScope();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -55,29 +71,33 @@ export default function Header() {
       setSearching(false);
       return;
     }
-    setSearching(true);
-    const supabase = createClient();
-    const pattern = `%${normalized}%`;
-    const { data } = await supabase
-      .from("hobbies")
-      .select("id, title, description, category")
-      .or(`title.ilike.${pattern},description.ilike.${pattern}`)
-      .order("created_at", { ascending: false })
-      .limit(8);
-    setResults((data as SearchResult[]) ?? []);
-    setSearching(false);
-  }, []);
 
-  useEffect(() => {
-    if (!searchFocused) {
+    if (!canSearchAllCommunities && searchableCommunityIds.length === 0) {
+      setResults([]);
       setSearching(false);
       return;
     }
 
-    // Avoid duplicate search queries on the feed page where HobbyFeed
-    // already fetches filtered communities from the same query state.
-    if (pathname === "/") {
-      setResults([]);
+    setSearching(true);
+    const supabase = createClient();
+    const pattern = `%${normalized}%`;
+    let queryBuilder = supabase
+      .from("hobbies")
+      .select("id, title, description, category")
+      .or(`title.ilike.${pattern},description.ilike.${pattern}`)
+      .order("created_at", { ascending: false });
+
+    if (!canSearchAllCommunities) {
+      queryBuilder = queryBuilder.in("id", searchableCommunityIds);
+    }
+
+    const { data } = await queryBuilder.limit(8);
+    setResults((data as SearchResult[]) ?? []);
+    setSearching(false);
+  }, [canSearchAllCommunities, searchableCommunityIds]);
+
+  useEffect(() => {
+    if (!searchFocused) {
       setSearching(false);
       return;
     }

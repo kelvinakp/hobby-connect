@@ -7,6 +7,7 @@ import type { Skill } from "@/lib/profile-data";
 import { SKILL_LEVEL_COLORS } from "@/lib/profile-data";
 import { getDisplayName, getInitials } from "@/lib/display-name";
 import { formatDate } from "@/lib/date-locale";
+import { getCommunitySearchScope } from "@/lib/community-search-scope";
 import { useSearch } from "@/components/SearchContext";
 
 type ProfileSnippet = {
@@ -42,20 +43,36 @@ export default function HobbyFeed() {
   const [userId, setUserId] = useState<string | null>(null);
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [canSearchAllCommunities, setCanSearchAllCommunities] = useState(false);
+  const [searchableCommunityIds, setSearchableCommunityIds] = useState<string[]>(
+    []
+  );
 
   const fetchHobbies = useCallback(
     async (search: string, cat: string) => {
       setFiltering(true);
 
       async function attempt(applyCat: boolean) {
+        const searchTerm = search.trim();
+        if (
+          searchTerm &&
+          !canSearchAllCommunities &&
+          searchableCommunityIds.length === 0
+        ) {
+          return { data: [], error: null };
+        }
+
         let q = supabase
           .from("hobbies")
           .select("id, title, description, category, created_by, created_at")
           .order("created_at", { ascending: false });
 
-        if (search.trim()) {
-          const pattern = `%${search.trim()}%`;
+        if (searchTerm) {
+          const pattern = `%${searchTerm}%`;
           q = q.or(`title.ilike.${pattern},description.ilike.${pattern}`);
+          if (!canSearchAllCommunities) {
+            q = q.in("id", searchableCommunityIds);
+          }
         }
 
         if (applyCat && cat !== ALL_TAG) {
@@ -129,7 +146,7 @@ export default function HobbyFeed() {
       setFiltering(false);
       setLoading(false);
     },
-    [supabase, ALL_TAG]
+    [supabase, ALL_TAG, canSearchAllCommunities, searchableCommunityIds]
   );
 
   /* ── Initial load: auth + interests + hobbies ── */
@@ -139,6 +156,10 @@ export default function HobbyFeed() {
         data: { user },
       } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
+
+      const scope = await getCommunitySearchScope(supabase);
+      setCanSearchAllCommunities(scope.canSearchAllCommunities);
+      setSearchableCommunityIds(scope.searchableCommunityIds);
 
       if (user) {
         const { data: interests } = await supabase

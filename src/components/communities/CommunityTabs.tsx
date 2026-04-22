@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import CommunityChat from "./CommunityChat";
@@ -88,14 +86,19 @@ export default function CommunityTabs({
             Join this community to view details
           </h3>
           <p className="mt-1 text-sm text-charcoal-400 dark:text-charcoal-500">
-            Open Chat, Events, and Members are available after you join from Uni Announcement.
+            Open Chat, Events, and Members unlock after you click the
+            <span className="mx-1 font-semibold text-charcoal dark:text-charcoal-200">
+              Join Community
+            </span>
+            button above.
           </p>
-          <Link
-            href="/"
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-600"
           >
-            Go to Uni Announcement
-          </Link>
+            Go to Join button
+          </button>
         </div>
       </div>
     );

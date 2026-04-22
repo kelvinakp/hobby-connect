@@ -328,8 +328,9 @@ export default function Header() {
 
 function NotificationRow({ notification }: { notification: Notification }) {
   const timeAgo = getRelativeTime(notification.createdAt);
-  const targetHref =
-    notification.type === "message"
+  const targetHref = notification.targetHref
+    ? notification.targetHref
+    : notification.type === "message"
       ? `/communities/${notification.hobbyId}?tab=chat`
       : `/communities/${notification.hobbyId}`;
 
@@ -371,6 +372,22 @@ function NotificationRow({ notification }: { notification: Notification }) {
                 {notification.hobbyTitle}
               </span>
             </>
+          ) : notification.type === "announcement" ? (
+            <>
+              <span className="font-semibold">{notification.userName}</span>{" "}
+              published a new{" "}
+              <span className="font-semibold text-brand dark:text-brand-300">
+                uni announcement
+              </span>
+            </>
+          ) : notification.type === "event" ? (
+            <>
+              <span className="font-semibold">{notification.userName}</span>{" "}
+              scheduled an event in{" "}
+              <span className="font-semibold text-brand dark:text-brand-300">
+                {notification.hobbyTitle}
+              </span>
+            </>
           ) : (
             <>
               <span className="font-semibold">{notification.userName}</span>{" "}
@@ -386,6 +403,12 @@ function NotificationRow({ notification }: { notification: Notification }) {
             "{notification.messagePreview}"
           </p>
         )}
+        {(notification.type === "announcement" || notification.type === "event") &&
+          notification.title && (
+            <p className="mt-0.5 truncate text-[11px] text-charcoal-300 dark:text-charcoal-500">
+              "{notification.title}"
+            </p>
+          )}
         <p className="mt-0.5 text-[11px] text-charcoal-300 dark:text-charcoal-500" suppressHydrationWarning>
           {timeAgo}
         </p>

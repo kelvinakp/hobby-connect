@@ -15,13 +15,15 @@ import { getDisplayName } from "@/lib/display-name";
 
 export interface Notification {
   id: string;
-  type: "join" | "leave" | "message";
+  type: "join" | "leave" | "message" | "announcement" | "event";
   hobbyId: string;
   userName: string;
   userAvatar: string | null;
   hobbyTitle: string;
   createdAt: string;
   messagePreview?: string;
+  title?: string;
+  targetHref?: string;
   read: boolean;
 }
 
@@ -79,6 +81,8 @@ export default function NotificationProvider({
   useEffect(() => {
     let interestChannelRef: ReturnType<typeof supabase.channel> | null = null;
     let messageChannelRef: ReturnType<typeof supabase.channel> | null = null;
+    let announcementChannelRef: ReturnType<typeof supabase.channel> | null = null;
+    let eventChannelRef: ReturnType<typeof supabase.channel> | null = null;
     let profileChannelRef: ReturnType<typeof supabase.channel> | null = null;
 
     async function setup() {
@@ -301,6 +305,111 @@ export default function NotificationProvider({
         )
         .subscribe();
       messageChannelRef = messageChannel;
+
+      const announcementChannel = supabase
+        .channel(`announcement-notifications-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "posts",
+          },
+          async (payload) => {
+            const record = payload.new as {
+              id: string;
+              author_id: string;
+              title: string;
+              status: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+              created_at: string;
+            };
+            if (record.status !== "PUBLISHED") return;
+            if (record.author_id === user.id) return;
+
+            const { data: profile } = await supabase
+              .from("public_profiles")
+              .select("id, first_name, last_name, avatar_url")
+              .eq("id", record.author_id)
+              .maybeSingle();
+
+            const p = profile as {
+              first_name?: string | null;
+              last_name?: string | null;
+              avatar_url: string | null;
+            } | null;
+
+            const notif: Notification = {
+              id: `announcement-${record.id}`,
+              type: "announcement",
+              hobbyId: "",
+              userName: getDisplayName(p, "Admin"),
+              userAvatar: p?.avatar_url ?? null,
+              hobbyTitle: "Uni Announcement",
+              createdAt: record.created_at,
+              title: record.title,
+              targetHref: "/",
+              read: false,
+            };
+
+            pushNotification(notif);
+          },
+        )
+        .subscribe();
+      announcementChannelRef = announcementChannel;
+
+      const eventChannel = supabase
+        .channel(`event-notifications-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "events",
+          },
+          async (payload) => {
+            const record = payload.new as {
+              id: string;
+              community_id: string;
+              creator_id: string;
+              title: string;
+              status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "COMPLETED";
+              created_at: string;
+            };
+            if (record.status !== "APPROVED") return;
+            if (!watchedHobbyIdsRef.current.has(record.community_id)) return;
+            if (record.creator_id === user.id) return;
+
+            const { data: profile } = await supabase
+              .from("public_profiles")
+              .select("id, first_name, last_name, avatar_url")
+              .eq("id", record.creator_id)
+              .maybeSingle();
+
+            const p = profile as {
+              first_name?: string | null;
+              last_name?: string | null;
+              avatar_url: string | null;
+            } | null;
+
+            const notif: Notification = {
+              id: `event-${record.id}`,
+              type: "event",
+              hobbyId: record.community_id,
+              userName: getDisplayName(p, "Community Leader"),
+              userAvatar: p?.avatar_url ?? null,
+              hobbyTitle:
+                hobbyTitlesRef.current.get(record.community_id) ?? "community",
+              createdAt: record.created_at,
+              title: record.title,
+              targetHref: `/communities/${record.community_id}?tab=events`,
+              read: false,
+            };
+
+            pushNotification(notif);
+          },
+        )
+        .subscribe();
+      eventChannelRef = eventChannel;
     }
 
     setup();
@@ -308,6 +417,8 @@ export default function NotificationProvider({
     return () => {
       if (interestChannelRef) supabase.removeChannel(interestChannelRef);
       if (messageChannelRef) supabase.removeChannel(messageChannelRef);
+      if (announcementChannelRef) supabase.removeChannel(announcementChannelRef);
+      if (eventChannelRef) supabase.removeChannel(eventChannelRef);
       if (profileChannelRef) supabase.removeChannel(profileChannelRef);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
@@ -367,6 +478,20 @@ export default function NotificationProvider({
                       {toast.hobbyTitle}
                     </span>
                   </>
+                ) : toast.type === "announcement" ? (
+                  <>
+                    published a new{" "}
+                    <span className="font-semibold text-brand dark:text-brand-300">
+                      uni announcement
+                    </span>
+                  </>
+                ) : toast.type === "event" ? (
+                  <>
+                    scheduled an event in{" "}
+                    <span className="font-semibold text-brand dark:text-brand-300">
+                      {toast.hobbyTitle}
+                    </span>
+                  </>
                 ) : (
                   <>
                     sent a message in{" "}
@@ -381,6 +506,12 @@ export default function NotificationProvider({
                   "{toast.messagePreview}"
                 </p>
               )}
+              {(toast.type === "announcement" || toast.type === "event") &&
+                toast.title && (
+                  <p className="mt-1 truncate text-[11px] text-charcoal-300 dark:text-charcoal-500">
+                    "{toast.title}"
+                  </p>
+                )}
             </div>
             <button
               type="button"

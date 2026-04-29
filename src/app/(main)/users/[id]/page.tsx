@@ -71,7 +71,7 @@ export default async function UserProfilePage({ params }: Props) {
 
   return (
     <div className="py-6">
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-xl animate-[profileFadeIn_400ms_ease-out_both]">
         {/* Main card */}
         <div className="overflow-hidden rounded-2xl border border-charcoal-100 bg-white shadow-lg shadow-charcoal-900/5 dark:border-charcoal-700 dark:bg-charcoal-800/70 dark:shadow-black/20">
 
@@ -82,7 +82,7 @@ export default async function UserProfilePage({ params }: Props) {
 
           {/* Avatar + name section */}
           <div className="relative px-4 pb-5 sm:px-6">
-            <div className="-mt-12 flex items-end gap-4 sm:-mt-14">
+            <div className="-mt-12 flex items-end gap-4 animate-[profileSlideUp_500ms_ease-out_100ms_both] sm:-mt-14">
               {profile.avatar_url ? (
                 <Image
                   src={profile.avatar_url}
@@ -109,7 +109,7 @@ export default async function UserProfilePage({ params }: Props) {
             </div>
 
             {/* Info row */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 animate-[profileSlideUp_400ms_ease-out_200ms_both]">
               {profile.email && (
                 <span className="inline-flex items-center gap-1.5 text-xs text-charcoal-500 dark:text-charcoal-400">
                   <svg className="h-3.5 w-3.5 shrink-0 text-charcoal-400 dark:text-charcoal-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -138,14 +138,14 @@ export default async function UserProfilePage({ params }: Props) {
 
             {/* Bio */}
             {profile.bio && (
-              <p className="mt-4 text-sm leading-relaxed text-charcoal-600 dark:text-charcoal-300">
+              <p className="mt-4 text-sm leading-relaxed text-charcoal-600 dark:text-charcoal-300 animate-[profileSlideUp_400ms_ease-out_300ms_both]">
                 {profile.bio}
               </p>
             )}
 
             {/* Social links */}
             {socialLinks.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2 animate-[profileSlideUp_400ms_ease-out_350ms_both]">
                 {socialLinks.map((item) => {
                   const meta = getSocialMeta(item.platform);
                   if (!meta) return null;
@@ -170,7 +170,7 @@ export default async function UserProfilePage({ params }: Props) {
 
           {/* Divider + Skills & Hobbies */}
           {(skills.length > 0 || hobbies.length > 0) && (
-            <div className="border-t border-charcoal-100 px-4 py-5 dark:border-charcoal-700/60 sm:px-6">
+            <div className="border-t border-charcoal-100 px-4 py-5 dark:border-charcoal-700/60 sm:px-6 animate-[profileSlideUp_400ms_ease-out_400ms_both]">
               <div className="space-y-4">
                 {skills.length > 0 && (
                   <div>

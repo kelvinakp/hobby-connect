@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/date-locale";
 
@@ -15,6 +15,7 @@ interface Post {
 }
 
 const PAGE_SIZE = 20;
+const MIN_LOADING_MS = 220;
 
 export default function PostsFeed() {
   const supabase = createClient();
@@ -23,6 +24,8 @@ export default function PostsFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [contentVisible, setContentVisible] = useState(false);
+  const loadStartedAtRef = useRef<number>(Date.now());
 
   async function fetchPostsPage(pageNumber: number) {
     const from = pageNumber * PAGE_SIZE;
@@ -38,7 +41,12 @@ export default function PostsFeed() {
 
   useEffect(() => {
     let mounted = true;
+    let revealTimer: ReturnType<typeof setTimeout> | null = null;
     async function load(pageToLoad: number, replace = false) {
+      if (replace) {
+        loadStartedAtRef.current = Date.now();
+        setContentVisible(false);
+      }
       const { data, error } = await fetchPostsPage(pageToLoad);
 
       if (error) {
@@ -50,12 +58,20 @@ export default function PostsFeed() {
       setPosts((prev) => (replace ? incoming : [...prev, ...incoming]));
       setHasMore(incoming.length === PAGE_SIZE);
       setPage(pageToLoad);
-      setLoading(false);
       setLoadingMore(false);
+
+      const elapsed = Date.now() - loadStartedAtRef.current;
+      const delay = Math.max(0, MIN_LOADING_MS - elapsed);
+      revealTimer = setTimeout(() => {
+        if (!mounted) return;
+        setLoading(false);
+        requestAnimationFrame(() => setContentVisible(true));
+      }, delay);
     }
 
     function onRefresh() {
       setLoading(true);
+      setContentVisible(false);
       setLoadingMore(false);
       setHasMore(true);
       void load(0, true);
@@ -66,6 +82,7 @@ export default function PostsFeed() {
 
     return () => {
       mounted = false;
+      if (revealTimer) clearTimeout(revealTimer);
       window.removeEventListener("posts:refresh", onRefresh as EventListener);
     };
   }, [supabase]);
@@ -94,7 +111,11 @@ export default function PostsFeed() {
 
   if (posts.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-3xl">
+      <div
+        className={`mx-auto w-full max-w-3xl transition-opacity duration-300 ${
+          contentVisible ? "opacity-100" : "opacity-0"
+        }`}
+      >
         <div className="rounded-3xl border border-dashed border-charcoal-200 bg-white/70 py-16 text-center shadow-sm backdrop-blur-xl dark:border-charcoal-600 dark:bg-charcoal-800/40">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-900/30">
             <svg className="h-7 w-7 text-brand" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -111,7 +132,11 @@ export default function PostsFeed() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5">
+    <div
+      className={`mx-auto w-full max-w-3xl space-y-5 transition-opacity duration-300 ${
+        contentVisible ? "opacity-100" : "opacity-0"
+      }`}
+    >
       {posts.map((post) => (
         <PostCard key={post.id} post={post} />
       ))}

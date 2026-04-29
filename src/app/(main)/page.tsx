@@ -2,6 +2,8 @@ import PostsFeed from "@/components/PostsFeed";
 import CreatePostButton from "@/components/CreatePostButton";
 import CommunityDeleteToast from "@/components/CommunityDeleteToast";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
     <div className="py-8">

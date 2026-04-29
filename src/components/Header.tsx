@@ -264,7 +264,7 @@ export default function Header() {
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-2xl border border-charcoal-100/80 bg-white shadow-2xl shadow-charcoal-900/10 dark:border-charcoal-700 dark:bg-charcoal-800 dark:shadow-black/30">
+                <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-80 overflow-hidden rounded-2xl border border-charcoal-100/80 bg-white shadow-2xl shadow-charcoal-900/10 dark:border-charcoal-700 dark:bg-charcoal-800 dark:shadow-black/30 sm:w-80">
                   <div className="flex items-center justify-between px-4 py-3">
                     <h3 className="text-sm font-bold text-charcoal dark:text-white">Notifications</h3>
                     {notifications.length > 0 && (

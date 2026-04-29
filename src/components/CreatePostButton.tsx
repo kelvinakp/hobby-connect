@@ -7,11 +7,15 @@ import CreatePostModal from "@/components/CreatePostModal";
 interface Props {
   canManageCommunity?: boolean;
   mode?: "admin-publish" | "leader-submit";
+  inRow?: boolean;
+  wrapperClassName?: string;
 }
 
 export default function CreatePostButton({
   canManageCommunity = false,
   mode = "admin-publish",
+  inRow = false,
+  wrapperClassName = "",
 }: Props) {
   const [role, setRole] = useState<string>("user");
   const [adminMode, setAdminMode] = useState(true);
@@ -57,16 +61,22 @@ export default function CreatePostButton({
 
   return (
     <>
-      <div className="mx-auto mb-6 flex max-w-3xl justify-end">
+      <div
+        className={
+          inRow
+            ? `flex justify-end ${wrapperClassName}`.trim()
+            : `mx-auto mb-6 flex max-w-3xl justify-end ${wrapperClassName}`.trim()
+        }
+      >
         <button
           type="button"
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand to-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-[1px] hover:shadow-xl hover:brightness-110"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-brand to-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-brand/25 transition-all hover:-translate-y-[1px] hover:shadow-lg hover:brightness-110 sm:gap-2 sm:px-3.5 sm:text-sm"
         >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          {mode === "admin-publish" ? "Publish Post" : "Submit Post"}
+          {mode === "admin-publish" ? "Publish" : "Submit"}
         </button>
       </div>
 

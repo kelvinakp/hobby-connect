@@ -74,6 +74,50 @@ export type Database = {
         Relationships: [];
       };
 
+      public_profile_meta: {
+        Row: {
+          user_id: string;
+          nickname: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          nickname?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          nickname?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+
+      profile_social_links: {
+        Row: {
+          id: string;
+          user_id: string;
+          platform: string;
+          url: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          platform: string;
+          url: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          platform?: string;
+          url?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+
       messages: {
         Row: {
           id: string;

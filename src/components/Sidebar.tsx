@@ -19,10 +19,7 @@ export default function Sidebar() {
   const router = useRouter();
   const { open, close } = useSidebar();
   const [globalRole, setGlobalRole] = useState<string>("user");
-  const [adminMode, setAdminMode] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("sidebar-admin-mode") === "admin";
-  });
+  const [adminMode, setAdminMode] = useState<boolean>(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -35,6 +32,16 @@ export default function Sidebar() {
   useEffect(() => {
     adminModeRef.current = adminMode;
   }, [adminMode]);
+
+  useEffect(() => {
+    const storedMode =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("sidebar-admin-mode")
+        : null;
+    const restored = storedMode === "admin";
+    setAdminMode(restored);
+    adminModeRef.current = restored;
+  }, []);
 
   const loadCommunities = useCallback(async () => {
     const requestId = ++loadRequestIdRef.current;
@@ -417,7 +424,7 @@ export default function Sidebar() {
               {loggingOut ? "Signing out…" : "Sign Out"}
             </button>
             <p className="mt-2 px-3 pb-1 text-[10px] text-charcoal-300 dark:text-charcoal-600">
-              HobbyConnect v0.2
+              HobbyConnect v0.3
             </p>
           </div>
         </div>

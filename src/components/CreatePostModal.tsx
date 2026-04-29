@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Props {
@@ -19,7 +19,7 @@ export default function CreatePostModal({
   onCreated,
   canManageCommunity = false,
 }: Props) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState("");
@@ -215,7 +215,7 @@ export default function CreatePostModal({
         onClick={onClose}
       />
 
-      <div className="relative z-10 mx-4 w-full max-w-xl animate-[fadeScaleIn_200ms_ease-out] rounded-3xl border border-charcoal-100/80 bg-white/95 p-6 shadow-2xl shadow-charcoal-900/10 backdrop-blur-xl dark:border-charcoal-700/80 dark:bg-charcoal-900/80 dark:shadow-black/40">
+      <div className="relative z-10 mx-3 w-full max-w-xl animate-[fadeScaleIn_200ms_ease-out] rounded-3xl border border-charcoal-100/80 bg-white/95 p-4 shadow-2xl shadow-charcoal-900/10 backdrop-blur-xl dark:border-charcoal-700/80 dark:bg-charcoal-900/80 dark:shadow-black/40 sm:mx-4 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-bold text-charcoal dark:text-white">
             {role === "admin" ? "Publish Post" : "Submit Post for Review"}

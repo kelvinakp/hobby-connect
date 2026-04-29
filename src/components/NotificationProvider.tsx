@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -52,7 +53,7 @@ export default function NotificationProvider({
 }: {
   children: ReactNode;
 }) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toast, setToast] = useState<Notification | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -306,107 +307,113 @@ export default function NotificationProvider({
         .subscribe();
       messageChannelRef = messageChannel;
 
+      async function handlePostNotification(payload: { new: Record<string, unknown> }) {
+        const record = payload.new as {
+          id: string;
+          author_id: string;
+          title: string;
+          status: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+          created_at: string;
+        };
+        if (record.status !== "PUBLISHED") return;
+        if (record.author_id === user.id) return;
+
+        const { data: profile } = await supabase
+          .from("public_profiles")
+          .select("id, first_name, last_name, avatar_url")
+          .eq("id", record.author_id)
+          .maybeSingle();
+
+        const p = profile as {
+          first_name?: string | null;
+          last_name?: string | null;
+          avatar_url: string | null;
+        } | null;
+
+        const notif: Notification = {
+          id: `announcement-${record.id}`,
+          type: "announcement",
+          hobbyId: "",
+          userName: getDisplayName(p, "Admin"),
+          userAvatar: p?.avatar_url ?? null,
+          hobbyTitle: "Uni Announcement",
+          createdAt: record.created_at,
+          title: record.title,
+          targetHref: "/",
+          read: false,
+        };
+
+        pushNotification(notif);
+      }
+
       const announcementChannel = supabase
         .channel(`announcement-notifications-${user.id}`)
         .on(
           "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "posts",
-          },
-          async (payload) => {
-            const record = payload.new as {
-              id: string;
-              author_id: string;
-              title: string;
-              status: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
-              created_at: string;
-            };
-            if (record.status !== "PUBLISHED") return;
-            if (record.author_id === user.id) return;
-
-            const { data: profile } = await supabase
-              .from("public_profiles")
-              .select("id, first_name, last_name, avatar_url")
-              .eq("id", record.author_id)
-              .maybeSingle();
-
-            const p = profile as {
-              first_name?: string | null;
-              last_name?: string | null;
-              avatar_url: string | null;
-            } | null;
-
-            const notif: Notification = {
-              id: `announcement-${record.id}`,
-              type: "announcement",
-              hobbyId: "",
-              userName: getDisplayName(p, "Admin"),
-              userAvatar: p?.avatar_url ?? null,
-              hobbyTitle: "Uni Announcement",
-              createdAt: record.created_at,
-              title: record.title,
-              targetHref: "/",
-              read: false,
-            };
-
-            pushNotification(notif);
-          },
+          { event: "INSERT", schema: "public", table: "posts" },
+          handlePostNotification,
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "posts" },
+          handlePostNotification,
         )
         .subscribe();
       announcementChannelRef = announcementChannel;
+
+      async function handleEventNotification(payload: { new: Record<string, unknown> }) {
+        const record = payload.new as {
+          id: string;
+          community_id: string;
+          creator_id: string;
+          title: string;
+          status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "COMPLETED";
+          created_at: string;
+        };
+        if (record.status !== "APPROVED") return;
+        if (!watchedHobbyIdsRef.current.has(record.community_id)) return;
+        if (record.creator_id === user.id) return;
+
+        const { data: profile } = await supabase
+          .from("public_profiles")
+          .select("id, first_name, last_name, avatar_url")
+          .eq("id", record.creator_id)
+          .maybeSingle();
+
+        const p = profile as {
+          first_name?: string | null;
+          last_name?: string | null;
+          avatar_url: string | null;
+        } | null;
+
+        const notif: Notification = {
+          id: `event-${record.id}`,
+          type: "event",
+          hobbyId: record.community_id,
+          userName: getDisplayName(p, "Community Leader"),
+          userAvatar: p?.avatar_url ?? null,
+          hobbyTitle:
+            hobbyTitlesRef.current.get(record.community_id) ?? "community",
+          createdAt: record.created_at,
+          title: record.title,
+          targetHref: `/communities/${record.community_id}?tab=events`,
+          read: false,
+        };
+
+        pushNotification(notif);
+      }
 
       const eventChannel = supabase
         .channel(`event-notifications-${user.id}`)
         .on(
           "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "events",
-          },
-          async (payload) => {
-            const record = payload.new as {
-              id: string;
-              community_id: string;
-              creator_id: string;
-              title: string;
-              status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "COMPLETED";
-              created_at: string;
-            };
-            if (record.status !== "APPROVED") return;
-            if (!watchedHobbyIdsRef.current.has(record.community_id)) return;
-            if (record.creator_id === user.id) return;
-
-            const { data: profile } = await supabase
-              .from("public_profiles")
-              .select("id, first_name, last_name, avatar_url")
-              .eq("id", record.creator_id)
-              .maybeSingle();
-
-            const p = profile as {
-              first_name?: string | null;
-              last_name?: string | null;
-              avatar_url: string | null;
-            } | null;
-
-            const notif: Notification = {
-              id: `event-${record.id}`,
-              type: "event",
-              hobbyId: record.community_id,
-              userName: getDisplayName(p, "Community Leader"),
-              userAvatar: p?.avatar_url ?? null,
-              hobbyTitle:
-                hobbyTitlesRef.current.get(record.community_id) ?? "community",
-              createdAt: record.created_at,
-              title: record.title,
-              targetHref: `/communities/${record.community_id}?tab=events`,
-              read: false,
-            };
-
-            pushNotification(notif);
-          },
+          { event: "INSERT", schema: "public", table: "events" },
+          handleEventNotification,
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "events" },
+          handleEventNotification,
         )
         .subscribe();
       eventChannelRef = eventChannel;
@@ -443,7 +450,7 @@ export default function NotificationProvider({
 
       {/* ── Toast popup ── */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[100] w-80 animate-slide-up rounded-xl border border-charcoal-100 bg-white p-4 shadow-xl dark:border-charcoal-700 dark:bg-charcoal-800">
+        <div className="fixed bottom-4 left-4 right-4 z-[100] animate-slide-up rounded-xl border border-charcoal-100 bg-white p-4 shadow-xl dark:border-charcoal-700 dark:bg-charcoal-800 sm:left-auto sm:right-6 sm:bottom-6 sm:w-80">
           <div className="flex items-start gap-3">
             {toast.userAvatar ? (
               <Image

@@ -15,7 +15,7 @@ export default function MainLayout({
       <SearchProvider>
         <SidebarProvider>
           <Header />
-          <main className="mt-14 min-h-[calc(100vh-3.5rem)] px-4 py-6 sm:px-6">
+          <main className="mt-14 min-h-[calc(100vh-3.5rem)] px-3 py-4 sm:px-4 sm:py-6 md:px-6">
             <div className="mx-auto w-full max-w-[1500px] lg:grid lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
               <Sidebar />
               <section className="min-w-0">{children}</section>

@@ -92,7 +92,7 @@ export default function CreateCommunityModal({ open, onClose, onCreated }: Props
       />
 
       {/* Modal */}
-      <div className="relative z-10 mx-4 w-full max-w-md animate-[fadeScaleIn_200ms_ease-out] rounded-3xl border border-charcoal-100/80 bg-white/95 p-6 shadow-2xl shadow-charcoal-900/10 backdrop-blur-xl dark:border-charcoal-700/80 dark:bg-charcoal-900/80 dark:shadow-black/40">
+      <div className="relative z-10 mx-3 w-full max-w-md animate-[fadeScaleIn_200ms_ease-out] rounded-3xl border border-charcoal-100/80 bg-white/95 p-4 shadow-2xl shadow-charcoal-900/10 backdrop-blur-xl dark:border-charcoal-700/80 dark:bg-charcoal-900/80 dark:shadow-black/40 sm:mx-4 sm:p-6">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-bold text-charcoal dark:text-white">

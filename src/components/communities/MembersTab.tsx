@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getDisplayName, getInitials } from "@/lib/display-name";
 import { formatShortDate } from "@/lib/date-locale";
@@ -25,7 +26,7 @@ interface Props {
 }
 
 export default function MembersTab({ communityId, createdBy, userId, userRole }: Props) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [members, setMembers] = useState<Member[]>([]);
   const [creatorProfile, setCreatorProfile] = useState<Member["profiles"]>(null);
   const [loading, setLoading] = useState(true);
@@ -140,16 +141,20 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
         {/* Creator card */}
         <div className="mb-4 rounded-2xl border border-l-4 border-l-brand border-charcoal-100 bg-gradient-to-r from-brand-50/50 to-transparent p-4 dark:border-charcoal-700 dark:from-brand-900/10 dark:border-l-brand">
           <div className="flex items-center gap-3">
-            {creatorProfile?.avatar_url ? (
-              <Image src={creatorProfile.avatar_url} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-full bg-brand-50 dark:bg-brand-900/30" unoptimized />
-            ) : (
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-500 text-sm font-bold text-white shadow-md shadow-brand/20">
-                {getInitials(creatorProfile)}
-              </span>
-            )}
+            <Link href={`/users/${createdBy}`} className="shrink-0">
+              {creatorProfile?.avatar_url ? (
+                <Image src={creatorProfile.avatar_url} alt="" width={40} height={40} className="h-10 w-10 rounded-full bg-brand-50 transition-opacity hover:opacity-80 dark:bg-brand-900/30" unoptimized />
+              ) : (
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-500 text-sm font-bold text-white shadow-md shadow-brand/20 transition-opacity hover:opacity-80">
+                  {getInitials(creatorProfile)}
+                </span>
+              )}
+            </Link>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-charcoal dark:text-white">{getDisplayName(creatorProfile, "Unknown")}</p>
+                <Link href={`/users/${createdBy}`} className="text-sm font-semibold text-charcoal hover:text-brand hover:underline dark:text-white dark:hover:text-brand-300">
+                  {getDisplayName(creatorProfile, "Unknown")}
+                </Link>
                 <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
                   Creator
                 </span>
@@ -184,16 +189,20 @@ export default function MembersTab({ communityId, createdBy, userId, userRole }:
                   key={m.id}
                   className="group flex items-center gap-3 rounded-xl border border-charcoal-100 bg-white px-4 py-3 transition-shadow hover:shadow-sm dark:border-charcoal-700 dark:bg-charcoal-800/40"
                 >
-                  {m.profiles?.avatar_url ? (
-                    <Image src={m.profiles.avatar_url} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full bg-brand-50 dark:bg-brand-900/30" unoptimized />
-                  ) : (
-                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-400 text-xs font-bold text-white">
-                      {getInitials(m.profiles)}
-                    </span>
-                  )}
+                  <Link href={`/users/${m.user_id}`} className="shrink-0">
+                    {m.profiles?.avatar_url ? (
+                      <Image src={m.profiles.avatar_url} alt="" width={36} height={36} className="h-9 w-9 rounded-full bg-brand-50 transition-opacity hover:opacity-80 dark:bg-brand-900/30" unoptimized />
+                    ) : (
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-400 text-xs font-bold text-white transition-opacity hover:opacity-80">
+                        {getInitials(m.profiles)}
+                      </span>
+                    )}
+                  </Link>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium text-charcoal dark:text-white">{getDisplayName(m.profiles, "Unknown")}</p>
+                      <Link href={`/users/${m.user_id}`} className="text-sm font-medium text-charcoal hover:text-brand hover:underline dark:text-white dark:hover:text-brand-300">
+                        {getDisplayName(m.profiles, "Unknown")}
+                      </Link>
                       <span className="rounded-full bg-charcoal-50 px-2 py-0.5 text-[10px] font-medium text-charcoal-500 dark:bg-charcoal-600 dark:text-charcoal-300">
                         Member
                       </span>

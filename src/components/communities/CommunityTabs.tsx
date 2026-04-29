@@ -113,7 +113,7 @@ export default function CommunityTabs({
             <button
               key={tab.id}
               onClick={() => setTabAndUrl(tab.id)}
-              className={`relative z-10 flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
+              className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-all sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm ${
                 isActive
                   ? "bg-brand text-white shadow-md shadow-brand/25"
                   : "text-charcoal-500 hover:text-charcoal-700 dark:text-charcoal-300 dark:hover:text-white"

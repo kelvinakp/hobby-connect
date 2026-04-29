@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate } from "@/lib/date-locale";
+import { formatDateTime } from "@/lib/date-locale";
 
 interface Post {
   id: string;
@@ -18,14 +18,18 @@ const PAGE_SIZE = 20;
 const MIN_LOADING_MS = 220;
 
 export default function PostsFeed() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [pendingPosts, setPendingPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
+  const [jumpToPostId, setJumpToPostId] = useState<string | null>(null);
+  const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
   const loadStartedAtRef = useRef<number>(Date.now());
+  const firstPostCreatedAt = posts[0]?.created_at ?? null;
 
   async function fetchPostsPage(pageNumber: number) {
     const from = pageNumber * PAGE_SIZE;
@@ -74,6 +78,7 @@ export default function PostsFeed() {
       setContentVisible(false);
       setLoadingMore(false);
       setHasMore(true);
+      setPendingPosts([]);
       void load(0, true);
     }
 
@@ -86,6 +91,72 @@ export default function PostsFeed() {
       window.removeEventListener("posts:refresh", onRefresh as EventListener);
     };
   }, [supabase]);
+
+  useEffect(() => {
+    if (loading || !firstPostCreatedAt) return;
+
+    let active = true;
+    async function checkNewAnnouncements() {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, title, content, status, image_url, created_at")
+        .eq("status", "PUBLISHED")
+        .is("community_id", null)
+        .gt("created_at", firstPostCreatedAt)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error || !active) return;
+      const incoming = (data as unknown as Post[]) ?? [];
+      if (incoming.length === 0) return;
+
+      setPendingPosts((prev) => {
+        const prevIds = new Set(prev.map((p) => p.id));
+        const merged = [...incoming.filter((p) => !prevIds.has(p.id)), ...prev];
+        return merged;
+      });
+    }
+
+    void checkNewAnnouncements();
+    const intervalId = window.setInterval(() => {
+      void checkNewAnnouncements();
+    }, 20000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [firstPostCreatedAt, loading, supabase]);
+
+  function showNewAnnouncements() {
+    if (pendingPosts.length === 0) return;
+    setPosts((prev) => {
+      const existingIds = new Set(prev.map((p) => p.id));
+      const fresh = pendingPosts.filter((p) => !existingIds.has(p.id));
+      if (fresh.length > 0) {
+        setJumpToPostId(fresh[0].id);
+        setHighlightPostId(fresh[0].id);
+      }
+      return [...fresh, ...prev];
+    });
+    setPendingPosts([]);
+  }
+
+  useEffect(() => {
+    if (!jumpToPostId) return;
+    const el = document.getElementById(`post-${jumpToPostId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    setJumpToPostId(null);
+  }, [jumpToPostId, posts]);
+
+  useEffect(() => {
+    if (!highlightPostId) return;
+    const timer = window.setTimeout(() => {
+      setHighlightPostId(null);
+    }, 1800);
+    return () => window.clearTimeout(timer);
+  }, [highlightPostId]);
 
   if (loading) {
     return (
@@ -137,8 +208,20 @@ export default function PostsFeed() {
         contentVisible ? "opacity-100" : "opacity-0"
       }`}
     >
+      {pendingPosts.length > 0 && (
+        <div className="sticky top-20 z-10 flex justify-center">
+          <button
+            type="button"
+            onClick={showNewAnnouncements}
+            className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white/95 px-4 py-2 text-xs font-semibold text-brand shadow-lg shadow-brand/10 backdrop-blur-xl transition-all hover:-translate-y-[1px] hover:bg-brand-50 dark:border-brand-700/60 dark:bg-charcoal-800/90 dark:text-brand-300 dark:hover:bg-brand-900/20"
+          >
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            new Announcement
+          </button>
+        </div>
+      )}
       {posts.map((post) => (
-        <PostCard key={post.id} post={post} />
+        <PostCard key={post.id} post={post} highlighted={highlightPostId === post.id} />
       ))}
       {hasMore && (
         <div className="flex justify-center pt-2">
@@ -174,16 +257,23 @@ export default function PostsFeed() {
   );
 }
 
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, highlighted = false }: { post: Post; highlighted?: boolean }) {
   return (
-    <article className="rounded-3xl border border-charcoal-100/80 bg-white/90 p-6 shadow-lg shadow-charcoal-900/5 transition-all hover:-translate-y-[1px] hover:shadow-xl hover:shadow-charcoal-900/10 dark:border-charcoal-700/80 dark:bg-charcoal-800/70 dark:shadow-black/25 dark:backdrop-blur-xl">
+    <article
+      id={`post-${post.id}`}
+      className={`rounded-2xl border bg-white/90 p-4 shadow-lg transition-all hover:-translate-y-[1px] hover:shadow-xl dark:bg-charcoal-800/70 dark:backdrop-blur-xl sm:rounded-3xl sm:p-6 ${
+        highlighted
+          ? "border-brand-300/70 shadow-brand/20 ring-2 ring-brand-200/70 dark:border-brand-500/60 dark:ring-brand-700/40"
+          : "border-charcoal-100/80 shadow-charcoal-900/5 hover:shadow-charcoal-900/10 dark:border-charcoal-700/80 dark:shadow-black/25"
+      }`}
+    >
       <div className="mb-4 text-xs text-charcoal-400 dark:text-charcoal-500">
-        <span>{formatDate(post.created_at)}</span>
+        <span>{formatDateTime(post.created_at)}</span>
       </div>
 
       {/* Content */}
       <h3 className="mb-2 text-lg font-bold tracking-tight text-charcoal dark:text-white">{post.title}</h3>
-      <p className="whitespace-pre-wrap text-sm leading-7 text-charcoal-500 dark:text-charcoal-300">
+      <p className="whitespace-pre-wrap break-words text-sm leading-7 text-charcoal-500 dark:text-charcoal-300">
         {post.content}
       </p>
       {post.image_url && (

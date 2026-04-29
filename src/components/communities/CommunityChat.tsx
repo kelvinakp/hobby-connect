@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getDisplayName, getInitials } from "@/lib/display-name";
 import { formatTime } from "@/lib/date-locale";
@@ -27,7 +27,7 @@ interface Props {
 }
 
 export default function CommunityChat({ communityId, userId, userRole }: Props) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
@@ -302,7 +302,7 @@ export default function CommunityChat({ communityId, userId, userRole }: Props) 
                           </Link>
                         )}
                       </p>
-                      <p className="text-sm leading-relaxed">
+                      <p className="break-words text-sm leading-relaxed">
                         {msg.content}
                       </p>
                       <p className={`mt-1 text-[10px] ${isOwn ? "text-white/70" : "text-charcoal-400 dark:text-charcoal-500"}`}>

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Skill } from "@/lib/profile-data";
 import { SKILL_LEVEL_COLORS } from "@/lib/profile-data";
@@ -34,7 +34,7 @@ type HobbyWithProfile = {
 };
 
 export default function HobbyFeed() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const { query: searchQuery, category: selectedCategory, setCategory, clear, ALL_TAG } = useSearch();
 

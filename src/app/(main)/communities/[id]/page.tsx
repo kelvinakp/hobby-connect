@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import CommunityTabs from "@/components/communities/CommunityTabs";
 import CommunityMembershipButton from "@/components/communities/CommunityMembershipButton";
 import CreatePostButton from "@/components/CreatePostButton";
+import DeleteCommunityButton from "@/components/communities/DeleteCommunityButton";
 
 interface HobbyRow {
   id: string;
@@ -45,17 +46,18 @@ export default async function CommunityPage({ params }: Props) {
   let isJoined = false;
   let isPrivileged = false;
   let isCommunityCreator = false;
+  let canDeleteCommunity = false;
   if (user) {
     const isCreator = hobby.created_by === user.id;
     isCommunityCreator = isCreator;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const [{ data: profile }, { data: myMembership }] = await Promise.all([
+      supabase.from("profiles").select("role").eq("id", user.id).single(),
+      supabase.from("interests").select("id").eq("hobby_id", id).eq("user_id", user.id).maybeSingle(),
+    ]);
 
     const globalRole = (profile as { role: string } | null)?.role ?? "user";
+    canDeleteCommunity = isCreator || (globalRole === "admin" && adminMode);
     const privileged =
       isCreator ||
       globalRole === "moderator" ||
@@ -65,18 +67,10 @@ export default async function CommunityPage({ params }: Props) {
       canAccessCommunity = true;
       isPrivileged = true;
       isJoined = true;
-    } else {
-      const { data: myMembership } = await supabase
-        .from("interests")
-        .select("id")
-        .eq("hobby_id", id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (myMembership) {
-        userRole = "member";
-        canAccessCommunity = true;
-        isJoined = true;
-      }
+    } else if (myMembership) {
+      userRole = "member";
+      canAccessCommunity = true;
+      isJoined = true;
     }
   }
 
@@ -84,14 +78,14 @@ export default async function CommunityPage({ params }: Props) {
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       <div className="shrink-0 border-b border-charcoal-100 bg-gradient-to-b from-brand-50/40 to-transparent pb-5 dark:border-charcoal-700 dark:from-brand-900/10">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-600 shadow-lg shadow-brand/25">
-            <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-600 shadow-lg shadow-brand/25 sm:h-14 sm:w-14">
+            <svg className="h-5 w-5 text-white sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z" />
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-charcoal dark:text-white">
+            <h1 className="text-xl font-bold tracking-tight text-charcoal dark:text-white sm:text-2xl">
               {hobby.title}
             </h1>
             {hobby.description && (
@@ -99,27 +93,41 @@ export default async function CommunityPage({ params }: Props) {
                 {hobby.description}
               </p>
             )}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {hobby.category && (
-                <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand dark:bg-brand-900/40 dark:text-brand-300">
-                  {hobby.category}
-                </span>
-              )}
-              {userRole && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-600 dark:bg-charcoal-700 dark:text-charcoal-300">
-                  {userRole === "moderator" ? "Community Leader" : "Member"}
-                </span>
-              )}
-              <CommunityMembershipButton
-                communityId={id}
-                userId={user?.id ?? null}
-                initialJoined={isJoined}
-                isPrivileged={isPrivileged}
-              />
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {hobby.category && (
+                  <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand dark:bg-brand-900/40 dark:text-brand-300">
+                    {hobby.category}
+                  </span>
+                )}
+                {userRole && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-600 dark:bg-charcoal-700 dark:text-charcoal-300">
+                    {userRole === "moderator" ? "Community Leader" : "Member"}
+                  </span>
+                )}
+                <CommunityMembershipButton
+                  communityId={id}
+                  userId={user?.id ?? null}
+                  initialJoined={isJoined}
+                  isPrivileged={isPrivileged}
+                />
+                <DeleteCommunityButton
+                  communityId={id}
+                  communityTitle={hobby.title}
+                  canDelete={canDeleteCommunity}
+                />
+              </div>
+              <div className="ml-auto">
+                <CreatePostButton
+                  mode="leader-submit"
+                  canManageCommunity={isCommunityCreator}
+                  inRow
+                  wrapperClassName="pr-1 sm:pr-2"
+                />
+              </div>
             </div>
           </div>
         </div>
-        <CreatePostButton mode="leader-submit" canManageCommunity={isCommunityCreator} />
       </div>
 
       <CommunityTabs

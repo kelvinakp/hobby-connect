@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/date-locale";
 
@@ -32,7 +32,7 @@ const STATUS_COLORS: Record<Event["status"], string> = {
 };
 
 export default function EventsTab({ communityId, userId, userRole }: Props) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [adminMode, setAdminMode] = useState(true);
   const isMod =
     userRole === "moderator" ||
@@ -192,7 +192,7 @@ export default function EventsTab({ communityId, userId, userRole }: Props) {
             </div>
           )}
           <form onSubmit={handleCreate} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-medium text-charcoal-600 dark:text-charcoal-200">Title</label>
                 <input
@@ -214,7 +214,7 @@ export default function EventsTab({ communityId, userId, userRole }: Props) {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-charcoal-600 dark:text-charcoal-200">Date & Time</label>
                 <input

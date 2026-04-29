@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getDisplayName, getInitials } from "@/lib/display-name";
 import { formatShortDate } from "@/lib/date-locale";
@@ -25,7 +25,7 @@ interface HobbyWithInterests {
 }
 
 export default function MyHobbyInterests() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [hobbies, setHobbies] = useState<HobbyWithInterests[]>([]);
   const [loading, setLoading] = useState(true);

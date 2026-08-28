@@ -1,0 +1,29 @@
+# Pings the health endpoint every 3 days so the Supabase project keeps seeing
+# queries and never pauses. Fails loudly if the app or database is down, so a
+# broken demo shows up as a red X in the Actions tab instead of being discovered
+# by someone reading the portfolio.
+
+name: Keep demo awake
+
+on:
+  schedule:
+    # 06:00 UTC every 3rd day. GitHub's scheduler is best-effort and can run late
+    # under load, which is fine here — the pause window is a full 7 days.
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: # lets you trigger it by hand from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          code=$(curl -sS -o /tmp/body -w "%{http_code}" \
+            https://rsuhobbyconnect.vercel.app/api/health)
+          echo "HTTP $code"
+          cat /tmp/body
+          test "$code" = "200"
+
+# NOTE: GitHub disables scheduled workflows on public repos with no commits for 60
+# days, and emails you first. If that happens, push any commit or press "Enable
+# workflow" in the Actions tab to re-arm it.
